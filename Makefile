@@ -24,7 +24,7 @@ help: ## Display this help.
 
 .PHONY: $(CONTAINER_TARGETS)
 $(CONTAINER_TARGETS):
-	$(COMPOSE) run --rm -T dev make $@
+	$(COMPOSE) run --rm -T -e IMG="$(IMG)" dev make $@
 
 .PHONY: build
 build: manifests generate fmt vet ## Build the controller image.
@@ -34,6 +34,10 @@ build: manifests generate fmt vet ## Build the controller image.
 run: build ## Run the controller against the cluster in ~/.kube/config (override with KUBECONFIG_DIR).
 	$(COMPOSE) up app
 
+.PHONY: test-e2e
+test-e2e: ## Run the kind + KWOK end-to-end tests (KEEP=1 keeps the cluster).
+	./hack/e2e/run.sh
+
 .PHONY: shell
 shell: ## Open a shell in the dev container.
 	$(COMPOSE) run --rm dev bash
@@ -41,6 +45,7 @@ shell: ## Open a shell in the dev container.
 .PHONY: clean
 clean: ## Remove build output, containers and cached Go volumes.
 	$(COMPOSE) down --volumes --remove-orphans
+	-./hack/e2e/down.sh
 	rm -rf bin dist cover.out
 
 endif
