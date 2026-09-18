@@ -1,0 +1,10 @@
+apiVersion: bestbefore.k-belt.sh/v1alpha1
+kind: BestBefore
+metadata:
+  name: e2e
+spec:
+  nodeClaimSelector:
+    matchLabels:
+      karpenter.sh/nodepool: default
+  maxAge: 60s
+  taintDriftedNodes: true

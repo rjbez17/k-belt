@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filler
+  namespace: default
+spec:
+  replicas: 6
+  selector:
+    matchLabels: {app: filler}
+  template:
+    metadata:
+      labels: {app: filler}
+    spec:
+      terminationGracePeriodSeconds: 1
+      # Only run on Karpenter-provisioned nodes, one pod per node, so replicas == nodes.
+      nodeSelector:
+        karpenter.sh/nodepool: default
+      tolerations:
+        - operator: Exists
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels: {app: filler}
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.10
+          resources:
+            requests: {cpu: 100m, memory: 64Mi}

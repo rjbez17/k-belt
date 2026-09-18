@@ -46,6 +46,17 @@ make clean
 
 Kubebuilder's original targets (install, deploy, build-installer, ...) live in `hack/container.mk`.
 
+### End-to-end tests
+
+`make test-e2e` runs BestBefore against a real Karpenter in a throwaway kind cluster (about five
+minutes). It creates the cluster, installs [KWOK](https://kwok.sigs.k8s.io) so fake nodes cost
+nothing, builds and installs Karpenter's KWOK provider plus k-belt, then asserts that a rollout
+respects the NodePool's disruption budget, that deleting a policy restores the NodeClaims, and that
+the paused and revert annotations are honoured. `KEEP=1 make test-e2e` leaves the cluster up.
+
+Karpenter's KWOK provider has no published image, so it is built from the checkout at
+`../karpenter` (override with `KARPENTER_SRC`). The scripts live in `hack/e2e/`.
+
 ## Getting Started
 
 ### Prerequisites

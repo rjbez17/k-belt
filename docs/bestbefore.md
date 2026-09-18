@@ -50,7 +50,8 @@ Karpenter's hash-version migration during an upgrade, so drift survives it as lo
 running.
 
 `internal/controller/karpenter_contract_test.go` runs Karpenter's own drift and hash controllers
-against these changes, so a Karpenter upgrade that breaks this behaviour fails `make test`.
+against these changes, so a Karpenter upgrade that breaks this behaviour fails `make test`, and
+`make test-e2e` exercises the whole flow against a real Karpenter on kind + KWOK.
 
 ## Spec reference
 
