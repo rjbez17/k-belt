@@ -1,0 +1,14 @@
+apiVersion: bestbefore.k-belt.sh/v1alpha1
+kind: BestBefore
+metadata:
+  labels:
+    app.kubernetes.io/name: k-belt
+    app.kubernetes.io/managed-by: kustomize
+  name: bestbefore-sample
+spec:
+  # Rotate nodes from the "default" NodePool once they are 21 days old.
+  # Keep the NodePool's expireAfter longer (e.g. 720h) as a hard backstop.
+  nodeClaimSelector:
+    matchLabels:
+      karpenter.sh/nodepool: default
+  maxAge: 504h
