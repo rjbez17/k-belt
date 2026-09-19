@@ -20,3 +20,8 @@ jobs:
 
       - name: Running Tests
         run: make test
+
+      - name: Check generated files are up to date
+        run: |
+          make manifests generate
+          git diff --exit-code
