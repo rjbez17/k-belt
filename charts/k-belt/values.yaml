@@ -1,0 +1,74 @@
+# -- Number of controller replicas. Extra replicas stand by via leader election.
+replicaCount: 1
+
+image:
+  # -- Controller image repository.
+  repository: ghcr.io/rjbez17/k-belt
+  # -- Image tag. Defaults to the chart's appVersion.
+  tag: ""
+  pullPolicy: IfNotPresent
+# -- Image pull secrets for private registries.
+imagePullSecrets: []
+
+# -- Overrides the chart name used in resource names.
+nameOverride: ""
+# -- Overrides the full name of the chart's resources.
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Create the controller's ServiceAccount.
+  create: true
+  # -- Name to use; generated from the chart name when empty.
+  name: ""
+  annotations: {}
+
+controller:
+  # -- How often every NodeClaim is re-evaluated on top of its exact maxAge deadline (minimum 10s).
+  resyncPeriod: 5m
+  # -- Extra args appended to the controller command.
+  extraArgs: []
+  # -- Log at development verbosity (zap flags).
+  extraEnv: []
+
+metrics:
+  # -- Serve controller metrics.
+  enabled: true
+  # -- Port the metrics endpoint listens on.
+  port: 8443
+  # -- Protect metrics with authn/authz. Scrapers then need the k-belt-metrics-reader ClusterRole.
+  secure: true
+  serviceMonitor:
+    # -- Create a Prometheus Operator ServiceMonitor (requires its CRD).
+    enabled: false
+    labels: {}
+    interval: 30s
+
+# -- Pod resources. The controller's cost scales with NodeClaim count.
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 10m
+    memory: 64Mi
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector:
+  kubernetes.io/os: linux
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+# -- Recommended on managed clusters so k-belt isn't evicted by its own rotations.
+priorityClassName: ""
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL

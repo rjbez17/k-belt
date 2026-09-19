@@ -1,0 +1,21 @@
+k-belt {{ .Chart.AppVersion }} installed into namespace {{ .Release.Namespace }}.
+
+Create a BestBefore policy to start rotating nodes (see docs/bestbefore.md):
+
+  apiVersion: bestbefore.k-belt.sh/v1alpha1
+  kind: BestBefore
+  metadata:
+    name: default-pool
+  spec:
+    nodeClaimSelector:
+      matchLabels:
+        karpenter.sh/nodepool: default
+    maxAge: 504h
+
+Check on it with:
+
+  kubectl get bestbefores
+
+Helm does not upgrade CRDs. After upgrading this chart, apply the CRD yourself:
+
+  kubectl apply -f https://raw.githubusercontent.com/rjbez17/k-belt/{{ .Chart.AppVersion }}/charts/k-belt/crds/bestbefore.k-belt.sh_bestbefores.yaml

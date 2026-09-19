@@ -1,0 +1,49 @@
+# Generated from config/rbac/role.yaml by hack/sync-chart.sh. DO NOT EDIT.
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - bestbefore.k-belt.sh
+  resources:
+  - bestbefores
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - bestbefore.k-belt.sh
+  resources:
+  - bestbefores/status
+  verbs:
+  - get
+  - patch
+- apiGroups:
+  - events.k8s.io
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - karpenter.sh
+  resources:
+  - nodeclaims
+  verbs:
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - karpenter.sh
+  resources:
+  - nodepools
+  verbs:
+  - get
+  - list
+  - watch

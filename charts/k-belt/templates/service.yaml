@@ -1,0 +1,37 @@
+{{- if .Values.metrics.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "k-belt.fullname" . }}-metrics
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "k-belt.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "k-belt.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: metrics
+      port: {{ .Values.metrics.port }}
+      targetPort: metrics
+{{- if .Values.metrics.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "k-belt.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "k-belt.labels" . | nindent 4 }}
+    {{- with .Values.metrics.serviceMonitor.labels }}{{- toYaml . | nindent 4 }}{{- end }}
+spec:
+  selector:
+    matchLabels: {{- include "k-belt.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.metrics.serviceMonitor.interval }}
+      {{- if .Values.metrics.secure }}
+      scheme: https
+      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tlsConfig:
+        insecureSkipVerify: true
+      {{- end }}
+{{- end }}
+{{- end }}
