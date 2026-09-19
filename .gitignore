@@ -34,3 +34,7 @@ go.work.sum
 # Tool binaries and build output
 bin/
 dist/
+
+# Jekyll local build output
+docs/_site/
+docs/.jekyll-cache/
