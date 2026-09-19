@@ -77,7 +77,7 @@ retry 120 "cluster settled" bash -c "[ \$(kubectl get nodeclaims --no-headers | 
 # deleted NodeClaim would satisfy the "no longer drifted" check for the wrong reason.
 kubectl patch nodepool default --type merge -p '{"spec":{"disruption":{"budgets":[{"nodes":"0"}]}}}'
 for claim in $(claims names); do
-  kubectl annotate nodeclaim "${claim}" bestbefore.k-belt.sh/paused=true --overwrite >/dev/null
+  kubectl annotate nodeclaim "${claim}" bestbefore.k-belt.io/paused=true --overwrite >/dev/null
 done
 kubectl apply -f "${E2E_DIR}/manifests/bestbefore.yaml"
 sleep 45  # well past maxAge: every NodeClaim is stale but paused
@@ -85,11 +85,11 @@ sleep 45  # well past maxAge: every NodeClaim is stale but paused
 pass "paused NodeClaims left alone"
 
 unpaused=$(claims names | awk '{print $1}')
-kubectl annotate nodeclaim "${unpaused}" bestbefore.k-belt.sh/paused- >/dev/null
-retry 60 "unpaused NodeClaim drifted" bash -c "kubectl get nodeclaim ${unpaused} -o jsonpath='{.metadata.annotations}' | grep -q bestbefore.k-belt.sh/policy"
-kubectl annotate nodeclaim "${unpaused}" bestbefore.k-belt.sh/revert=true --overwrite >/dev/null
+kubectl annotate nodeclaim "${unpaused}" bestbefore.k-belt.io/paused- >/dev/null
+retry 60 "unpaused NodeClaim drifted" bash -c "kubectl get nodeclaim ${unpaused} -o jsonpath='{.metadata.annotations}' | grep -q bestbefore.k-belt.io/policy"
+kubectl annotate nodeclaim "${unpaused}" bestbefore.k-belt.io/revert=true --overwrite >/dev/null
 # The NodeClaim must still exist: a deleted one has no annotations either.
-retry 60 "reverted NodeClaim restored" bash -c "annotations=\$(kubectl get nodeclaim ${unpaused} -o jsonpath='{.metadata.annotations}') && ! grep -q bestbefore.k-belt.sh/policy <<<\"\${annotations}\""
+retry 60 "reverted NodeClaim restored" bash -c "annotations=\$(kubectl get nodeclaim ${unpaused} -o jsonpath='{.metadata.annotations}') && ! grep -q bestbefore.k-belt.io/policy <<<\"\${annotations}\""
 
 kubectl delete bestbefore e2e --ignore-not-found
 log "All end-to-end checks passed"

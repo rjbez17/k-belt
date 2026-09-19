@@ -16,7 +16,7 @@ documented in [charts/k-belt/values.yaml](charts/k-belt/values.yaml); the common
 Helm never upgrades CRDs, so after `helm upgrade` apply the CRD yourself:
 
 ```sh
-kubectl apply -f https://raw.githubusercontent.com/rjbez17/k-belt/main/charts/k-belt/crds/bestbefore.k-belt.sh_bestbefores.yaml
+kubectl apply -f https://raw.githubusercontent.com/rjbez17/k-belt/main/charts/k-belt/crds/bestbefore.k-belt.io_bestbefores.yaml
 ```
 
 Images are published to `ghcr.io/rjbez17/k-belt` for linux/amd64 and linux/arm64: `vX.Y.Z` tags for
@@ -33,7 +33,7 @@ NodeClaim as `Drifted` (reason `NodePoolDrifted`) and replaces it the way it han
 within the NodePool's disruption budgets, with replacement capacity launched first.
 
 ```yaml
-apiVersion: bestbefore.k-belt.sh/v1alpha1
+apiVersion: bestbefore.k-belt.io/v1alpha1
 kind: BestBefore
 metadata:
   name: default-pool
@@ -46,7 +46,7 @@ spec:
 
 If a policy stops applying (deleted, `maxAge` raised, selector changed), k-belt restores the
 original hash on NodeClaims Karpenter hasn't started replacing yet. Individual NodeClaims can be
-frozen with the `bestbefore.k-belt.sh/paused` annotation, or reverted and frozen with `bestbefore.k-belt.sh/revert`.
+frozen with the `bestbefore.k-belt.io/paused` annotation, or reverted and frozen with `bestbefore.k-belt.io/revert`.
 
 Keep a longer `expireAfter` on the NodePool as a hard backstop, with enough headroom for a full
 rollout. Read **[docs/bestbefore.md](docs/bestbefore.md)** before using it in production: it covers

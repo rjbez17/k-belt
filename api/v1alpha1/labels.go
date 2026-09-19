@@ -22,25 +22,25 @@ const (
 	// DriftedHashValue is what BestBefore writes into karpenter.sh/nodepool-hash to make Karpenter
 	// see the NodeClaim as drifted. Karpenter's hashes are numeric, so this can never collide with
 	// a real one.
-	DriftedHashValue = "bestbefore.k-belt.sh"
+	DriftedHashValue = "bestbefore.k-belt.io"
 
 	// PolicyAnnotationKey records which BestBefore drifted the NodeClaim.
-	PolicyAnnotationKey = "bestbefore.k-belt.sh/policy"
+	PolicyAnnotationKey = "bestbefore.k-belt.io/policy"
 	// OriginalHashAnnotationKey holds the nodepool-hash BestBefore replaced, for restoring it.
-	OriginalHashAnnotationKey = "bestbefore.k-belt.sh/original-nodepool-hash"
+	OriginalHashAnnotationKey = "bestbefore.k-belt.io/original-nodepool-hash"
 	// OriginalHashVersionAnnotationKey holds the nodepool-hash-version the original hash was computed with.
-	OriginalHashVersionAnnotationKey = "bestbefore.k-belt.sh/original-nodepool-hash-version"
+	OriginalHashVersionAnnotationKey = "bestbefore.k-belt.io/original-nodepool-hash-version"
 	// DriftedAtAnnotationKey records when BestBefore drifted the NodeClaim (RFC 3339).
-	DriftedAtAnnotationKey = "bestbefore.k-belt.sh/drifted-at"
+	DriftedAtAnnotationKey = "bestbefore.k-belt.io/drifted-at"
 
 	// PausedAnnotationKey, set on a NodeClaim with any value, makes BestBefore leave it exactly as
 	// it is: no drift, no restore and no taint changes.
-	PausedAnnotationKey = "bestbefore.k-belt.sh/paused"
+	PausedAnnotationKey = "bestbefore.k-belt.io/paused"
 	// RevertAnnotationKey, set on a NodeClaim with any value, pauses it like PausedAnnotationKey
 	// and first restores the hash BestBefore replaced.
-	RevertAnnotationKey = "bestbefore.k-belt.sh/revert"
+	RevertAnnotationKey = "bestbefore.k-belt.io/revert"
 
 	// DriftedTaintKey is the PreferNoSchedule taint added to drifted nodes by policies that set
 	// spec.taintDriftedNodes.
-	DriftedTaintKey = "bestbefore.k-belt.sh/drifted"
+	DriftedTaintKey = "bestbefore.k-belt.io/drifted"
 )

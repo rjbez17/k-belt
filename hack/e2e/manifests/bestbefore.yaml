@@ -1,4 +1,4 @@
-apiVersion: bestbefore.k-belt.sh/v1alpha1
+apiVersion: bestbefore.k-belt.io/v1alpha1
 kind: BestBefore
 metadata:
   name: e2e

@@ -35,7 +35,7 @@ type BestBeforeSpec struct {
 	// +required
 	MaxAge metav1.Duration `json:"maxAge"`
 
-	// taintDriftedNodes adds a bestbefore.k-belt.sh/drifted:PreferNoSchedule taint to the Nodes of
+	// taintDriftedNodes adds a bestbefore.k-belt.io/drifted:PreferNoSchedule taint to the Nodes of
 	// NodeClaims this policy drifts, so pods prefer nodes that aren't about to be replaced.
 	//
 	// Warning: Karpenter's scheduling simulation treats PreferNoSchedule taints on existing nodes

@@ -3,7 +3,7 @@
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
 cliVersion: 4.16.0
-domain: k-belt.sh
+domain: k-belt.io
 layout:
 - go.kubebuilder.io/v4
 projectName: k-belt
@@ -12,7 +12,7 @@ resources:
 - api:
     crdVersion: v1
   controller: true
-  domain: k-belt.sh
+  domain: k-belt.io
   group: bestbefore
   kind: BestBefore
   path: github.com/rjbez17/k-belt/api/v1alpha1

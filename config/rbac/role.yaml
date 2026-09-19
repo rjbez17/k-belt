@@ -14,7 +14,7 @@ rules:
   - patch
   - watch
 - apiGroups:
-  - bestbefore.k-belt.sh
+  - bestbefore.k-belt.io
   resources:
   - bestbefores
   verbs:
@@ -22,7 +22,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - bestbefore.k-belt.sh
+  - bestbefore.k-belt.io
   resources:
   - bestbefores/status
   verbs:

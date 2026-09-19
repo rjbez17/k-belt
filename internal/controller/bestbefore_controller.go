@@ -47,8 +47,8 @@ type BestBeforeReconciler struct {
 	Clock clock.PassiveClock
 }
 
-// +kubebuilder:rbac:groups=bestbefore.k-belt.sh,resources=bestbefores,verbs=get;list;watch
-// +kubebuilder:rbac:groups=bestbefore.k-belt.sh,resources=bestbefores/status,verbs=get;patch
+// +kubebuilder:rbac:groups=bestbefore.k-belt.io,resources=bestbefores,verbs=get;list;watch
+// +kubebuilder:rbac:groups=bestbefore.k-belt.io,resources=bestbefores/status,verbs=get;patch
 // +kubebuilder:rbac:groups=karpenter.sh,resources=nodeclaims,verbs=get;list;watch
 
 // Reconcile counts the NodeClaims a policy matches, considers stale and has drifted, and requeues

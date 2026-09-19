@@ -2,7 +2,7 @@
 import json
 import sys
 
-KBELT = "bestbefore.k-belt.sh"
+KBELT = "bestbefore.k-belt.io"
 MODE = sys.argv[1]
 items = json.load(sys.stdin)["items"]
 

@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.22.0
-  name: bestbefores.bestbefore.k-belt.sh
+  name: bestbefores.bestbefore.k-belt.io
 spec:
-  group: bestbefore.k-belt.sh
+  group: bestbefore.k-belt.io
   names:
     kind: BestBefore
     listKind: BestBeforeList
@@ -117,7 +117,7 @@ spec:
                 x-kubernetes-map-type: atomic
               taintDriftedNodes:
                 description: |-
-                  taintDriftedNodes adds a bestbefore.k-belt.sh/drifted:PreferNoSchedule taint to the Nodes of
+                  taintDriftedNodes adds a bestbefore.k-belt.io/drifted:PreferNoSchedule taint to the Nodes of
                   NodeClaims this policy drifts, so pods prefer nodes that aren't about to be replaced.
 
                   Warning: Karpenter's scheduling simulation treats PreferNoSchedule taints on existing nodes

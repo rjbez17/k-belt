@@ -24,14 +24,14 @@ Karpenter stamps every NodeClaim with its NodePool's hash (`karpenter.sh/nodepoo
 the NodeClaim `Drifted` (reason `NodePoolDrifted`) when the two differ. k-belt uses that check:
 
 1. **Drift.** When a NodeClaim is older than `maxAge` for any `BestBefore` whose selector matches it,
-   k-belt replaces its hash with `bestbefore.k-belt.sh` and records:
+   k-belt replaces its hash with `bestbefore.k-belt.io` and records:
 
    | Annotation | Value |
    |---|---|
-   | `bestbefore.k-belt.sh/policy` | Policy that owns the drift |
-   | `bestbefore.k-belt.sh/original-nodepool-hash` | Hash k-belt replaced |
-   | `bestbefore.k-belt.sh/original-nodepool-hash-version` | Karpenter hash version of that hash |
-   | `bestbefore.k-belt.sh/drifted-at` | When k-belt drifted it (RFC 3339) |
+   | `bestbefore.k-belt.io/policy` | Policy that owns the drift |
+   | `bestbefore.k-belt.io/original-nodepool-hash` | Hash k-belt replaced |
+   | `bestbefore.k-belt.io/original-nodepool-hash-version` | Karpenter hash version of that hash |
+   | `bestbefore.k-belt.io/drifted-at` | When k-belt drifted it (RFC 3339) |
 
    Karpenter then replaces the node like any other drifted node.
 
@@ -56,7 +56,7 @@ against these changes, so a Karpenter upgrade that breaks this behaviour fails `
 ## Spec reference
 
 ```yaml
-apiVersion: bestbefore.k-belt.sh/v1alpha1
+apiVersion: bestbefore.k-belt.io/v1alpha1
 kind: BestBefore
 metadata:
   name: default-pool
@@ -77,13 +77,13 @@ empty string.
 
 | Annotation | Effect |
 |---|---|
-| `bestbefore.k-belt.sh/paused` | k-belt ignores the NodeClaim: it isn't drifted, restored or tainted, and anything k-belt already did stays as it is. |
-| `bestbefore.k-belt.sh/revert` | Everything `paused` does, and first undoes k-belt's drift: restores the original hash (same rules as [restore](#how-it-works)) and removes the drifted taint. |
+| `bestbefore.k-belt.io/paused` | k-belt ignores the NodeClaim: it isn't drifted, restored or tainted, and anything k-belt already did stays as it is. |
+| `bestbefore.k-belt.io/revert` | Everything `paused` does, and first undoes k-belt's drift: restores the original hash (same rules as [restore](#how-it-works)) and removes the drifted taint. |
 
 ```sh
-kubectl annotate nodeclaim <name> bestbefore.k-belt.sh/paused=true     # freeze
-kubectl annotate nodeclaim <name> bestbefore.k-belt.sh/revert=true     # undo and freeze
-kubectl annotate nodeclaim <name> bestbefore.k-belt.sh/revert-         # hand back to k-belt
+kubectl annotate nodeclaim <name> bestbefore.k-belt.io/paused=true     # freeze
+kubectl annotate nodeclaim <name> bestbefore.k-belt.io/revert=true     # undo and freeze
+kubectl annotate nodeclaim <name> bestbefore.k-belt.io/revert-         # hand back to k-belt
 ```
 
 If both are set, `revert` wins. Removing the annotation returns the NodeClaim to normal handling, so
@@ -194,7 +194,7 @@ destinations, and the scheduler uses them too. A pod evicted from one stale node
 and be evicted again when that node's turn comes. Karpenter's own drift (for example after an AMI
 change) behaves the same way. Larger Drifted budgets shorten the window.
 
-`taintDriftedNodes: true` adds a `bestbefore.k-belt.sh/drifted:PreferNoSchedule` taint to drifted
+`taintDriftedNodes: true` adds a `bestbefore.k-belt.io/drifted:PreferNoSchedule` taint to drifted
 nodes (removed if the drift is restored) so the scheduler prefers fresh nodes. **Caveat:** Karpenter's
 scheduling simulation treats `PreferNoSchedule` taints on existing nodes as hard constraints unless a
 NodePool template also carries a `PreferNoSchedule` taint. With tainting on, Karpenter may launch
@@ -244,19 +244,19 @@ be stale. Phase it in:
 
 ### Manual undo
 
-To undo k-belt's drift on a single NodeClaim, annotate it with `bestbefore.k-belt.sh/revert` (see
+To undo k-belt's drift on a single NodeClaim, annotate it with `bestbefore.k-belt.io/revert` (see
 [Pausing and reverting NodeClaims](#pausing-and-reverting-nodeclaims)). If k-belt isn't running,
 restore the hash by hand before Karpenter starts replacing the node:
 
 ```sh
 NC=<nodeclaim>
 HASH=$(kubectl get nodeclaim "$NC" -o jsonpath='{.metadata.annotations.bestbefore\.k-belt\.sh/original-nodepool-hash}')
-kubectl annotate nodeclaim "$NC" --overwrite karpenter.sh/nodepool-hash="$HASH" bestbefore.k-belt.sh/paused=true \
-  bestbefore.k-belt.sh/policy- bestbefore.k-belt.sh/original-nodepool-hash- \
-  bestbefore.k-belt.sh/original-nodepool-hash-version- bestbefore.k-belt.sh/drifted-at-
+kubectl annotate nodeclaim "$NC" --overwrite karpenter.sh/nodepool-hash="$HASH" bestbefore.k-belt.io/paused=true \
+  bestbefore.k-belt.io/policy- bestbefore.k-belt.io/original-nodepool-hash- \
+  bestbefore.k-belt.io/original-nodepool-hash-version- bestbefore.k-belt.io/drifted-at-
 ```
 
-Adding `bestbefore.k-belt.sh/paused` stops k-belt drifting it again once it's back. If the NodeClaim's
+Adding `bestbefore.k-belt.io/paused` stops k-belt drifting it again once it's back. If the NodeClaim's
 `karpenter.sh/nodepool-hash-version` no longer matches the saved `original-nodepool-hash-version`,
 use the NodePool's current `karpenter.sh/nodepool-hash` instead. Nodes Karpenter has already tainted
 `karpenter.sh/disrupted` will be replaced regardless.

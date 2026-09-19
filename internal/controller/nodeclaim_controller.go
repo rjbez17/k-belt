@@ -102,7 +102,7 @@ type NodeClaimReconciler struct {
 	ResyncPeriod time.Duration
 }
 
-// +kubebuilder:rbac:groups=bestbefore.k-belt.sh,resources=bestbefores,verbs=get;list;watch
+// +kubebuilder:rbac:groups=bestbefore.k-belt.io,resources=bestbefores,verbs=get;list;watch
 // +kubebuilder:rbac:groups=karpenter.sh,resources=nodeclaims,verbs=get;list;watch;patch
 // +kubebuilder:rbac:groups=karpenter.sh,resources=nodepools,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;patch
