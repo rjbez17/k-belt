@@ -73,6 +73,9 @@ pass "Karpenter cleared Drifted after restore"
 
 log "Honouring the paused and revert annotations"
 retry 120 "cluster settled" bash -c "[ \$(kubectl get nodeclaims --no-headers | grep -c True) -eq ${NODES} ]"
+# Stop Karpenter replacing nodes for this phase: it would delete the NodeClaim under test, and a
+# deleted NodeClaim would satisfy the "no longer drifted" check for the wrong reason.
+kubectl patch nodepool default --type merge -p '{"spec":{"disruption":{"budgets":[{"nodes":"0"}]}}}'
 for claim in $(claims names); do
   kubectl annotate nodeclaim "${claim}" bestbefore.k-belt.sh/paused=true --overwrite >/dev/null
 done
@@ -85,7 +88,8 @@ unpaused=$(claims names | awk '{print $1}')
 kubectl annotate nodeclaim "${unpaused}" bestbefore.k-belt.sh/paused- >/dev/null
 retry 60 "unpaused NodeClaim drifted" bash -c "kubectl get nodeclaim ${unpaused} -o jsonpath='{.metadata.annotations}' | grep -q bestbefore.k-belt.sh/policy"
 kubectl annotate nodeclaim "${unpaused}" bestbefore.k-belt.sh/revert=true --overwrite >/dev/null
-retry 60 "reverted NodeClaim restored" bash -c "! kubectl get nodeclaim ${unpaused} -o jsonpath='{.metadata.annotations}' | grep -q bestbefore.k-belt.sh/policy"
+# The NodeClaim must still exist: a deleted one has no annotations either.
+retry 60 "reverted NodeClaim restored" bash -c "annotations=\$(kubectl get nodeclaim ${unpaused} -o jsonpath='{.metadata.annotations}') && ! grep -q bestbefore.k-belt.sh/policy <<<\"\${annotations}\""
 
 kubectl delete bestbefore e2e --ignore-not-found
 log "All end-to-end checks passed"

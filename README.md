@@ -2,6 +2,26 @@
 
 A toolbelt of controllers that fill operational gaps in [Karpenter](https://karpenter.sh).
 
+## Install
+
+```sh
+helm install k-belt oci://ghcr.io/rjbez17/charts/k-belt \
+  --namespace k-belt-system --create-namespace
+```
+
+Karpenter must already be installed: k-belt watches its NodeClaims and NodePools. Chart values are
+documented in [charts/k-belt/values.yaml](charts/k-belt/values.yaml); the common ones are
+`image.tag`, `controller.resyncPeriod`, `replicaCount` and `metrics.*`.
+
+Helm never upgrades CRDs, so after `helm upgrade` apply the CRD yourself:
+
+```sh
+kubectl apply -f https://raw.githubusercontent.com/rjbez17/k-belt/main/charts/k-belt/crds/bestbefore.k-belt.sh_bestbefores.yaml
+```
+
+Images are published to `ghcr.io/rjbez17/k-belt` for linux/amd64 and linux/arm64: `vX.Y.Z` tags for
+releases, plus `main` and `sha-<commit>` for builds off the default branch.
+
 ## BestBefore
 
 Karpenter's `expireAfter` deletes a node as soon as it's too old, **ignoring the NodePool's
@@ -37,10 +57,11 @@ sizing, stalled drift, `terminationGracePeriod`, pod churn, budgets and first in
 Everything runs in Docker via `docker compose`; the Makefile forwards to the `dev` container.
 
 ```sh
-make test    # codegen, vet, envtest suites (incl. Karpenter contract tests)
-make lint    # golangci-lint
-make build   # controller image k-belt:dev
-make run     # run the image against ~/.kube/config
+make test        # codegen, vet, envtest suites (incl. Karpenter contract tests)
+make helm-lint   # lint and render the Helm chart
+make lint        # golangci-lint
+make build       # controller image k-belt:dev
+make run         # run the image against ~/.kube/config
 make clean
 ```
 
@@ -50,12 +71,16 @@ Kubebuilder's original targets (install, deploy, build-installer, ...) live in `
 
 `make test-e2e` runs BestBefore against a real Karpenter in a throwaway kind cluster (about five
 minutes). It creates the cluster, installs [KWOK](https://kwok.sigs.k8s.io) so fake nodes cost
-nothing, builds and installs Karpenter's KWOK provider plus k-belt, then asserts that a rollout
+nothing, builds and installs Karpenter's KWOK provider, installs k-belt **with the Helm chart**,
+then asserts that a rollout
 respects the NodePool's disruption budget, that deleting a policy restores the NodeClaims, and that
 the paused and revert annotations are honoured. `KEEP=1 make test-e2e` leaves the cluster up.
 
 Karpenter's KWOK provider has no published image, so it is built from the checkout at
 `../karpenter` (override with `KARPENTER_SRC`). The scripts live in `hack/e2e/`.
+
+The chart's CRD and ClusterRole rules are generated from `config/` by `hack/sync-chart.sh`, which
+`make manifests` runs; CI fails if they drift.
 
 ## Getting Started
 

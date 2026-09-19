@@ -4,6 +4,7 @@ set -euo pipefail
 CLUSTER="${CLUSTER:-k-belt-e2e}"
 KUBE_CONTEXT="kind-${CLUSTER}"
 KARPENTER_NAMESPACE="${KARPENTER_NAMESPACE:-kube-system}"
+KBELT_NAMESPACE="${KBELT_NAMESPACE:-k-belt-system}"
 KWOK_RELEASE="${KWOK_RELEASE:-v0.8.0}"
 # Karpenter's KWOK provider is not published as an image, so it is built from a local checkout.
 KARPENTER_SRC="${KARPENTER_SRC:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/karpenter}"

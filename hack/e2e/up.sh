@@ -48,17 +48,15 @@ helm --kube-context "${KUBE_CONTEXT}" upgrade --install karpenter "${KARPENTER_S
   --set settings.featureGates.capacityBuffer=false
 kubectl -n "${KARPENTER_NAMESPACE}" rollout status deployment/karpenter --timeout=180s
 
-log "Deploying k-belt"
+log "Deploying k-belt via the Helm chart"
 make -C "${ROOT_DIR}" build IMG="${IMG}"
 "${KIND}" load docker-image "${IMG}" --name "${CLUSTER}"
-make -C "${ROOT_DIR}" build-installer IMG="${IMG}"
-# build-installer pins the image by editing a tracked kustomization; keep the tree clean.
-git -C "${ROOT_DIR}" checkout -- config/manager/kustomization.yaml
-kubectl apply -f "${ROOT_DIR}/dist/install.yaml"
-# The image is side-loaded into kind, so don't try to pull it.
-kubectl -n k-belt-system patch deployment k-belt-controller-manager --type strategic \
-  -p '{"spec":{"template":{"spec":{"containers":[{"name":"manager","imagePullPolicy":"IfNotPresent"}]}}}}'
-kubectl -n k-belt-system rollout status deployment/k-belt-controller-manager --timeout=180s
+helm --kube-context "${KUBE_CONTEXT}" upgrade --install k-belt "${ROOT_DIR}/charts/k-belt" \
+  --namespace "${KBELT_NAMESPACE}" --create-namespace --wait \
+  --set image.repository="${IMG%%:*}" \
+  --set image.tag="${IMG##*:}" \
+  --set image.pullPolicy=IfNotPresent
+kubectl -n "${KBELT_NAMESPACE}" rollout status deployment/k-belt --timeout=180s
 
 log "Cluster ready"
 kubectl get pods -A | grep -E "karpenter|kwok|k-belt"
