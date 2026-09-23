@@ -39,12 +39,21 @@ original=$(claims names)
 log "Rotating them with a BestBefore"
 kubectl apply -f "${E2E_DIR}/manifests/bestbefore.yaml"
 deadline=$((SECONDS + ROLLOUT_TIMEOUT))
-max_disrupting=0 saw_marked=0 saw_taint=0 saw_status=0 rotated=0
+max_disrupting=0 saw_marked=0 saw_taint=0 saw_status=0 rotated=0 lagging_polls=0
 while ((SECONDS < deadline)); do
-  read -r total marked drifted disrupting <<<"$(claims summary)"
+  read -r _ marked drifted disrupting <<<"$(claims summary)"
   if ((disrupting > max_disrupting)); then max_disrupting=${disrupting}; fi
   if ((marked > 0)); then saw_marked=1; fi
-  if ((drifted < marked)); then fail "k-belt marked ${marked} NodeClaims but Karpenter sees ${drifted} drifted"; fi
+  # Karpenter sets Drifted a moment after k-belt annotates, so a single poll can legitimately see
+  # fewer drifted than marked. Only a gap that persists across polls means Karpenter disagrees.
+  if ((drifted < marked)); then
+    ((lagging_polls++))
+  else
+    lagging_polls=0
+  fi
+  if ((lagging_polls > 6)); then
+    fail "k-belt marked ${marked} NodeClaims but Karpenter has seen only ${drifted} drifted for 30s"
+  fi
   if (($(nodes taints) > 0)); then saw_taint=1; fi
   status_drifted=$(kubectl get bestbefore e2e -o jsonpath='{.status.driftedNodeClaims}' 2>/dev/null)
   if ((${status_drifted:-0} > 0)); then saw_status=1; fi

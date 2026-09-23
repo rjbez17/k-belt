@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Shared settings for the kind + KWOK end-to-end run.
 set -euo pipefail
 

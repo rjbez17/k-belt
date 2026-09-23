@@ -34,6 +34,8 @@ DOCKERFILE
 docker build -q -t "${KARPENTER_IMG}" "${BUILD_DIR}"
 "${KIND}" load docker-image "${KARPENTER_IMG}" --name "${CLUSTER}"
 
+# This checkout's chart templates feature gates its values.yaml doesn't define, and Karpenter
+# panics on an empty gate value, so both are set explicitly below.
 log "Installing Karpenter (KWOK provider)"
 kubectl apply -f "${KARPENTER_SRC}/kwok/charts/crds"
 helm --kube-context "${KUBE_CONTEXT}" upgrade --install karpenter "${KARPENTER_SRC}/kwok/charts" \
@@ -43,7 +45,6 @@ helm --kube-context "${KUBE_CONTEXT}" upgrade --install karpenter "${KARPENTER_S
   --set controller.image.digest="" \
   --set settings.preferencePolicy=Ignore \
   --set replicas=1 \
-  `# this checkout's chart templates gates its values.yaml doesn't define; empty values panic on boot` \
   --set settings.featureGates.staticCapacity=false \
   --set settings.featureGates.capacityBuffer=false
 kubectl -n "${KARPENTER_NAMESPACE}" rollout status deployment/karpenter --timeout=180s
