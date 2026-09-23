@@ -1,0 +1,104 @@
+{{- if .Values.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "k-belt.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "k-belt.labels" . | nindent 4 }}
+  {{- with .Values.serviceAccount.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+---
+{{- end }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "k-belt.fullname" . }}-manager
+  labels: {{- include "k-belt.labels" . | nindent 4 }}
+# rbac-rules.yaml is generated from the +kubebuilder:rbac markers by `make manifests`.
+# Edit the markers in internal/controller, not this file.
+rules:
+{{- .Files.Get "rbac-rules.yaml" | nindent 2 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "k-belt.fullname" . }}-manager
+  labels: {{- include "k-belt.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "k-belt.fullname" . }}-manager
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "k-belt.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "k-belt.fullname" . }}-leader-election
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "k-belt.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "k-belt.fullname" . }}-leader-election
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "k-belt.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "k-belt.fullname" . }}-leader-election
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "k-belt.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- if and .Values.metrics.enabled .Values.metrics.secure }}
+---
+# Lets the controller authorise metrics scrapers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "k-belt.fullname" . }}-metrics-auth
+  labels: {{- include "k-belt.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["subjectaccessreviews"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "k-belt.fullname" . }}-metrics-auth
+  labels: {{- include "k-belt.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "k-belt.fullname" . }}-metrics-auth
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "k-belt.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+---
+# Bind this to whatever scrapes the metrics endpoint.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "k-belt.fullname" . }}-metrics-reader
+  labels: {{- include "k-belt.labels" . | nindent 4 }}
+rules:
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get"]
+{{- end }}

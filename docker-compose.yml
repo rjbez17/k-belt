@@ -1,0 +1,25 @@
+services:
+  # Toolchain container: every Makefile target (build, test, lint, codegen) runs here.
+  dev:
+    image: golang:1.26
+    working_dir: /workspace
+    environment:
+      IN_CONTAINER: "1"
+      GOFLAGS: -buildvcs=false
+    volumes:
+      - .:/workspace
+      - gomod:/go/pkg/mod
+      - gocache:/root/.cache/go-build
+
+  # The controller image, run against the cluster in your kubeconfig.
+  app:
+    build: .
+    image: k-belt:dev
+    environment:
+      KUBECONFIG: /kube/config
+    volumes:
+      - ${KUBECONFIG_DIR:-~/.kube}:/kube:ro
+
+volumes:
+  gomod:
+  gocache:

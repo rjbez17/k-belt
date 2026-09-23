@@ -1,0 +1,13 @@
+apiVersion: v2
+name: k-belt
+description: A toolbelt of controllers that fill operational gaps in Karpenter
+type: application
+# Both are overwritten from the git tag by the release workflow.
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/rjbez17/k-belt
+sources:
+  - https://github.com/rjbez17/k-belt
+keywords:
+  - karpenter
+  - node-lifecycle
