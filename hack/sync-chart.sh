@@ -1,19 +1,14 @@
 #!/usr/bin/env bash
-# Copies generated CRDs and RBAC rules from config/ into the Helm chart, so the chart can't drift
-# from the kubebuilder markers. Run by `make manifests`.
+# Regenerates the Helm chart's RBAC rules from the kubebuilder markers, so the chart can't drift
+# from the code. CRDs are written straight into charts/k-belt/crds by controller-gen.
+# Run by `make manifests`; takes the path to controller-gen.
 set -euo pipefail
+CONTROLLER_GEN="${1:?usage: sync-chart.sh <controller-gen>}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CHART="${ROOT_DIR}/charts/k-belt"
 
-install -m 0644 "${ROOT_DIR}"/config/crd/bases/*.yaml "${CHART}/crds/"
-
-# The chart renders these rules into its ClusterRole via .Files.Get.
 {
-  echo "# Generated from config/rbac/role.yaml by hack/sync-chart.sh. DO NOT EDIT."
-  python3 - "${ROOT_DIR}/config/rbac/role.yaml" <<'PY'
-import sys
-lines = open(sys.argv[1]).read().splitlines()
-rules = lines[lines.index("rules:") + 1:]
-print("\n".join(line for line in rules if line.strip()))
-PY
-} > "${CHART}/rbac-rules.yaml"
+  echo "# Generated from the kubebuilder RBAC markers by hack/sync-chart.sh. DO NOT EDIT."
+  # controller-gen emits a whole ClusterRole; the chart's template supplies everything but the rules.
+  "${CONTROLLER_GEN}" rbac:roleName=manager paths="./..." output:rbac:stdout |
+    awk '/^rules:/ {rules = 1; next} rules && NF'
+} > "${ROOT_DIR}/charts/k-belt/rbac-rules.yaml"

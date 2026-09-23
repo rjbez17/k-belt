@@ -13,7 +13,7 @@ COMPOSE ?= docker compose
 IMG ?= k-belt:dev
 
 # Forwarded to the dev container: make <target> == docker compose run dev make <target>
-CONTAINER_TARGETS := manifests generate fmt vet test lint lint-fix lint-config build-installer karpenter-crds
+CONTAINER_TARGETS := manifests generate fmt vet test lint lint-fix lint-config karpenter-crds
 
 .PHONY: help
 help: ## Display this help.
@@ -51,6 +51,6 @@ shell: ## Open a shell in the dev container.
 clean: ## Remove build output, containers and cached Go volumes.
 	$(COMPOSE) down --volumes --remove-orphans
 	-./hack/e2e/down.sh
-	rm -rf bin dist cover.out
+	rm -rf bin cover.out
 
 endif

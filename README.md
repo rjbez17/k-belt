@@ -51,9 +51,9 @@ make clean
 `make test-e2e` builds Karpenter's KWOK provider from a checkout at `../karpenter` (override with
 `KARPENTER_SRC`), since it has no published image. `KEEP=1` leaves the cluster running.
 
-Kubebuilder's original targets live in `hack/container.mk`. The chart's CRD and ClusterRole rules
-are generated from `config/` by `hack/sync-chart.sh`, which `make manifests` runs; CI fails if they
-drift.
+Kubebuilder's original targets live in `hack/container.mk`. The chart is the only packaging: `make
+manifests` writes its CRD and ClusterRole rules straight from the kubebuilder markers, and CI fails
+if the committed copies drift.
 
 More in [Contributing](https://k-belt.io/contributing/).
 

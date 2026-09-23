@@ -67,7 +67,7 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
-			filepath.Join("..", "..", "config", "crd", "bases"),
+			filepath.Join("..", "..", "charts", "k-belt", "crds"),
 			// Populated by `make karpenter-crds` from the pinned sigs.k8s.io/karpenter module.
 			filepath.Join("..", "..", "bin", "crds", "karpenter"),
 		},

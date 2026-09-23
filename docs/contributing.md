@@ -32,12 +32,12 @@ cluster up afterwards.
 | --- | --- |
 | `api/v1alpha1/` | The BestBefore types, and `labels.go` with every annotation and taint key |
 | `internal/controller/` | The two controllers: one owns NodeClaims, one maintains status |
-| `charts/k-belt/` | Helm chart; its CRD and RBAC are generated from `config/` |
+| `charts/k-belt/` | Helm chart, the only way k-belt is packaged; its CRD and RBAC rules are generated |
 | `hack/e2e/` | The kind + KWOK end-to-end scripts |
 | `docs/` | This site |
 
-Run `make manifests` after touching kubebuilder markers or API types. It regenerates `config/` and
-syncs the chart, and CI fails if you forget.
+Run `make manifests` after touching kubebuilder markers or API types. It writes the CRD and the
+chart's RBAC rules, and CI fails if you forget.
 
 ## Tests
 
