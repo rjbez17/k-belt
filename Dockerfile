@@ -1,7 +1,10 @@
 # Build the manager binary
 # Override BASE_IMAGE to build from another registry, e.g. docker.io/library/golang:1.26
 ARG BASE_IMAGE=golang:1.26
-FROM ${BASE_IMAGE} AS builder
+# Build on the host's own architecture and cross-compile: without this, buildx emulates the target
+# platform under QEMU and a linux/arm64 build on an amd64 runner takes tens of minutes.
+FROM --platform=${BUILDPLATFORM} ${BASE_IMAGE} AS builder
+ARG BUILDPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
 
