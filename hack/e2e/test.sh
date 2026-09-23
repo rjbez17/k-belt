@@ -47,7 +47,8 @@ while ((SECONDS < deadline)); do
   # Karpenter sets Drifted a moment after k-belt annotates, so a single poll can legitimately see
   # fewer drifted than marked. Only a gap that persists across polls means Karpenter disagrees.
   if ((drifted < marked)); then
-    ((lagging_polls++))
+    # Assignment, not ((lagging_polls++)): that evaluates to the old value, and a 0 fails under set -e.
+    lagging_polls=$((lagging_polls + 1))
   else
     lagging_polls=0
   fi

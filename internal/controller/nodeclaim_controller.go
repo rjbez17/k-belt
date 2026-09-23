@@ -291,7 +291,11 @@ func (r *NodeClaimReconciler) reattribute(ctx context.Context, owner *bestbefore
 // the emitted event. NodeClaims Karpenter has already started disrupting are left alone: restoring
 // their hash can't stop the replacement. A non-zero retryAfter asks for another attempt later.
 func (r *NodeClaimReconciler) restore(ctx context.Context, nodeClaim *karpv1.NodeClaim, reason string) (retryAfter time.Duration, err error) {
-	if nodeClaim.StatusConditions().Get(karpv1.ConditionTypeDisruptionReason).IsTrue() {
+	committed, err := r.karpenterCommitted(ctx, nodeClaim)
+	if err != nil {
+		return 0, err
+	}
+	if committed {
 		logf.FromContext(ctx).V(1).Info("not restoring nodeclaim Karpenter is already disrupting")
 		return 0, nil
 	}
@@ -320,6 +324,25 @@ func (r *NodeClaimReconciler) restore(ctx context.Context, nodeClaim *karpv1.Nod
 	r.event(nodeClaim, nil, EventReasonRestored, "Restore",
 		"%s (previously drifted by %s); restored its nodepool hash", reason, owner)
 	return 0, nil
+}
+
+// karpenterCommitted reports whether Karpenter has taken the NodeClaim for replacement, in which
+// case restoring its hash changes nothing. Karpenter taints the Node before it sets the
+// DisruptionReason condition, so both are checked.
+func (r *NodeClaimReconciler) karpenterCommitted(ctx context.Context, nodeClaim *karpv1.NodeClaim) (bool, error) {
+	if nodeClaim.StatusConditions().Get(karpv1.ConditionTypeDisruptionReason).IsTrue() {
+		return true, nil
+	}
+	if nodeClaim.Status.NodeName == "" {
+		return false, nil
+	}
+	node := &corev1.Node{}
+	if err := r.Get(ctx, types.NamespacedName{Name: nodeClaim.Status.NodeName}, node); err != nil {
+		return false, client.IgnoreNotFound(err)
+	}
+	return lo.ContainsBy(node.Spec.Taints, func(t corev1.Taint) bool {
+		return t.MatchTaint(&karpv1.DisruptedNoScheduleTaint)
+	}), nil
 }
 
 // restoreHash picks the hash to put back. The saved original is only valid if Karpenter hasn't

@@ -513,6 +513,22 @@ var _ = Describe("NodeClaim controller", func() {
 			Expect(expectNodeClaim(nodeClaim).Annotations[karpv1.NodePoolHashAnnotationKey]).To(Equal(bestbeforev1alpha1.DriftedHashValue))
 		})
 
+		It("leaves NodeClaims whose Node Karpenter has already tainted", func() {
+			// Karpenter taints the Node before it sets DisruptionReason, so the taint alone means
+			// the replacement is under way and restoring the hash would change nothing.
+			node := test.Node(test.NodeOptions{Taints: []corev1.Taint{karpv1.DisruptedNoScheduleTaint}})
+			ExpectApplied(ctx, k8sClient, node)
+			DeferCleanup(func() { ExpectDeleted(ctx, k8sClient, node) })
+			latest := expectNodeClaim(nodeClaim)
+			latest.Status.NodeName = node.Name
+			Expect(k8sClient.Status().Update(ctx, latest)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, bestBefore)).To(Succeed())
+
+			ExpectReconciled(ctx, reconciler, requestFor(nodeClaim))
+
+			Expect(expectNodeClaim(nodeClaim).Annotations[karpv1.NodePoolHashAnnotationKey]).To(Equal(bestbeforev1alpha1.DriftedHashValue))
+		})
+
 		It("restores the NodePool's current hash if Karpenter changed hash versions since the drift", func() {
 			patchAnnotations(nodeClaim, map[string]string{karpv1.NodePoolHashVersionAnnotationKey: newHashVersion})
 			stored := nodePool.DeepCopy()
