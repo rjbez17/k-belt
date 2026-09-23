@@ -162,6 +162,10 @@ func (r *NodeClaimReconciler) requeue(deadlines ...time.Duration) ctrl.Result {
 func (r *NodeClaimReconciler) jitteredResyncPeriod() time.Duration {
 	period := lo.Ternary(r.ResyncPeriod > 0, r.ResyncPeriod, DefaultResyncPeriod)
 	jitter := period / resyncJitterFraction
+	if jitter <= 0 {
+		// Too short to jitter, and rand.Int64N panics on a non-positive bound.
+		return period
+	}
 	return period - jitter + time.Duration(rand.Int64N(int64(2*jitter)))
 }
 

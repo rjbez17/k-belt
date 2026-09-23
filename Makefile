@@ -15,7 +15,7 @@ RENDERED_CHART ?= /tmp/k-belt-rendered.yaml
 
 # kind runs on the host, since it drives the host's Docker daemon.
 KIND_VERSION ?= v0.30.0
-KIND ?= $(PWD)/bin/kind
+KIND ?= $(CURDIR)/bin/kind
 KIND_PLATFORM := $(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
 # Forwarded to the dev container: make <target> == docker compose run dev make <target>
@@ -42,24 +42,24 @@ run: build ## Run the controller against the cluster in ~/.kube/config (override
 
 .PHONY: helm-lint
 helm-lint: ## Lint the Helm chart and validate what it renders against the Kubernetes schemas.
-	docker run --rm -v "$(PWD)/charts:/charts" alpine/helm:3.19.0 lint /charts/k-belt
-	docker run --rm -v "$(PWD)/charts:/charts" alpine/helm:3.19.0 template k-belt /charts/k-belt \
+	docker run --rm -v "$(CURDIR)/charts:/charts" alpine/helm:3.19.0 lint /charts/k-belt
+	docker run --rm -v "$(CURDIR)/charts:/charts" alpine/helm:3.19.0 template k-belt /charts/k-belt \
 		--set metrics.serviceMonitor.enabled=true > "$(RENDERED_CHART)"
 	docker run --rm -v "$(RENDERED_CHART):/rendered.yaml" ghcr.io/yannh/kubeconform:latest \
 		-summary -strict -ignore-missing-schemas /rendered.yaml
 
 .PHONY: lint-shell
 lint-shell: ## Shellcheck the hack scripts.
-	docker run --rm -v "$(PWD):/mnt" -w /mnt koalaman/shellcheck:stable -x -S warning \
+	docker run --rm -v "$(CURDIR):/mnt" -w /mnt koalaman/shellcheck:stable -x -S warning \
 		hack/sync-chart.sh hack/e2e/*.sh
 
 .PHONY: lint-docs
 lint-docs: ## Lint the documentation markdown.
-	docker run --rm -v "$(PWD):/w" -w /w davidanson/markdownlint-cli2:latest
+	docker run --rm -v "$(CURDIR):/w" -w /w davidanson/markdownlint-cli2:latest
 
 .PHONY: docs-build
 docs-build: ## Build the documentation site the way GitHub Pages does.
-	docker run --rm -v "$(PWD)/docs:/site" -w /site ruby:3.3 bash -c '\
+	docker run --rm -v "$(CURDIR)/docs:/site" -w /site ruby:3.3 bash -c '\
 		gem install jekyll jekyll-remote-theme jekyll-seo-tag jekyll-include-cache --no-document -q && \
 		jekyll build -d /tmp/site'
 
