@@ -11,6 +11,7 @@ SHELL = /usr/bin/env bash -o pipefail
 
 COMPOSE ?= docker compose
 IMG ?= k-belt:dev
+RENDERED_CHART ?= /tmp/k-belt-rendered.yaml
 
 # Forwarded to the dev container: make <target> == docker compose run dev make <target>
 CONTAINER_TARGETS := manifests generate fmt vet test lint lint-fix lint-config karpenter-crds
@@ -35,9 +36,27 @@ run: build ## Run the controller against the cluster in ~/.kube/config (override
 	$(COMPOSE) up app
 
 .PHONY: helm-lint
-helm-lint: ## Lint and render the Helm chart.
+helm-lint: ## Lint the Helm chart and validate what it renders against the Kubernetes schemas.
 	docker run --rm -v "$(PWD)/charts:/charts" alpine/helm:3.19.0 lint /charts/k-belt
-	docker run --rm -v "$(PWD)/charts:/charts" alpine/helm:3.19.0 template k-belt /charts/k-belt > /dev/null
+	docker run --rm -v "$(PWD)/charts:/charts" alpine/helm:3.19.0 template k-belt /charts/k-belt \
+		--set metrics.serviceMonitor.enabled=true > "$(RENDERED_CHART)"
+	docker run --rm -v "$(RENDERED_CHART):/rendered.yaml" ghcr.io/yannh/kubeconform:latest \
+		-summary -strict -ignore-missing-schemas /rendered.yaml
+
+.PHONY: lint-shell
+lint-shell: ## Shellcheck the hack scripts.
+	docker run --rm -v "$(PWD):/mnt" -w /mnt koalaman/shellcheck:stable -x -S warning \
+		hack/sync-chart.sh hack/e2e/*.sh
+
+.PHONY: lint-docs
+lint-docs: ## Lint the documentation markdown.
+	docker run --rm -v "$(PWD):/w" -w /w davidanson/markdownlint-cli2:latest
+
+.PHONY: docs-build
+docs-build: ## Build the documentation site the way GitHub Pages does.
+	docker run --rm -v "$(PWD)/docs:/site" -w /site ruby:3.3 bash -c '\
+		gem install jekyll jekyll-remote-theme jekyll-seo-tag jekyll-include-cache --no-document -q && \
+		jekyll build -d /tmp/site'
 
 .PHONY: test-e2e
 test-e2e: ## Run the kind + KWOK end-to-end tests (KEEP=1 keeps the cluster).

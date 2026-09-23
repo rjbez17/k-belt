@@ -16,7 +16,7 @@ nav_order: 3
 kubectl get bestbefores
 ```
 
-```
+```text
 NAME           MAX AGE   MATCHED   STALE   DRIFTED   AGE
 default-pool   504h      42        6       6         2m11s
 spot-pool      168h      18        0       0         2m11s
@@ -47,7 +47,7 @@ k-belt writes events on the NodeClaim, not on the policy:
 kubectl get events --field-selector involvedObject.kind=NodeClaim | grep BestBefore
 ```
 
-```
+```text
 4m   Normal   BestBeforeExceeded   nodeclaim/default-8vbh7   NodeClaim is older than BestBefore default-pool maxAge 504h; marked drifted for graceful replacement
 1m   Normal   BestBeforeRestored   nodeclaim/default-gjpbg   No BestBefore considers the NodeClaim stale any more (previously drifted by default-pool); restored its nodepool hash
 ```

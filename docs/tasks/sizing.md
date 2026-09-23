@@ -15,7 +15,7 @@ nav_order: 1
 Keep `expireAfter` on the NodePool. It is the hard limit on node age, and BestBefore does not
 replace it. What BestBefore needs is enough room underneath it to finish a rotation:
 
-```
+```text
 expireAfter - maxAge  >  rollout time
 
 rollout time  ≈  nodes in the pool
@@ -62,7 +62,7 @@ Phase it in instead:
    kubectl get bestbefores
    ```
 
-   ```
+   ```text
    NAME           MAX AGE   MATCHED   STALE   DRIFTED   AGE
    default-pool   1400h     312       4       4         18s
    ```

@@ -1,0 +1,10 @@
+{
+  // Rules relaxed for a Jekyll site; everything else is on.
+  "config": {
+    "MD013": false, // prose wraps at 100 columns, not 80
+    "MD022": false, // kramdown attribute lines ({: .no_toc }) must hug their heading
+    "MD025": false, // front matter carries the title, and pages also have an H1
+    "MD041": false  // the first line is front matter, not a heading
+  },
+  "globs": ["docs/**/*.md", "*.md"]
+}

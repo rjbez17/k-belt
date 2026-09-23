@@ -31,7 +31,7 @@ Confirm the controller is up:
 kubectl -n k-belt-system get pods
 ```
 
-```
+```text
 NAME                      READY   STATUS    RESTARTS   AGE
 k-belt-7d9f6c9b4c-7tqsn   1/1     Running   0          32s
 ```
@@ -67,7 +67,7 @@ spec:
 kubectl get bestbefores
 ```
 
-```
+```text
 NAME           MAX AGE   MATCHED   STALE   DRIFTED   AGE
 default-pool   504h      42        6       6         2m11s
 ```

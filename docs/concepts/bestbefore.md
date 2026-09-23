@@ -42,7 +42,7 @@ disruption controller replaces it under the NodePool's budgets.
 
 k-belt also emits an event on the NodeClaim, so `kubectl describe nodeclaim` shows why it happened:
 
-```
+```text
 Normal  BestBeforeExceeded  4m  k-belt  NodeClaim is older than BestBefore default-pool maxAge 504h;
                                         marked drifted for graceful replacement
 ```

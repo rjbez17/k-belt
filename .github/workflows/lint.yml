@@ -22,3 +22,11 @@ jobs:
         run: make lint-config
       - name: Run linter
         run: make lint
+      - name: Lint shell scripts
+        run: make lint-shell
+      - name: Lint documentation
+        run: make lint-docs
+      - name: Lint the chart and validate rendered manifests
+        run: make helm-lint
+      - name: Build the documentation site
+        run: make docs-build
