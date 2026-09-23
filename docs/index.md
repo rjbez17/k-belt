@@ -31,8 +31,8 @@ real clusters.
 ### Mass expiration
 
 Clusters scale because traffic grew, so nodes arrive in batches. Every node in a batch shares a
-creation time within a few minutes, and therefore its possible an expiry within a few minutes. When it arrives,
-Karpenter removes them as fast as it finds them.
+creation time within a few minutes, so their expiries can land within a few minutes of each other
+too. When that happens, Karpenter removes them as fast as it finds them.
 
 Traffic is often predictable, which makes this worse: a batch created during yesterday's peak
 expires during today's. Perfect PodDisruptionBudgets and warm caches would absorb that. Most
