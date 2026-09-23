@@ -48,8 +48,9 @@ make test-e2e    # kind + KWOK + Karpenter + k-belt, end to end
 make clean
 ```
 
-`make test-e2e` builds Karpenter's KWOK provider from a checkout at `../karpenter` (override with
-`KARPENTER_SRC`), since it has no published image. `KEEP=1` leaves the cluster running.
+`make test-e2e` downloads a pinned `kind` into `bin/` and builds Karpenter's KWOK provider from a
+checkout at `../karpenter` (override with `KARPENTER_SRC`), since it has no published image.
+`KEEP=1` leaves the cluster running.
 
 Kubebuilder's original targets live in `hack/container.mk`. The chart is the only packaging: `make
 manifests` writes its CRD and ClusterRole rules straight from the kubebuilder markers, and CI fails

@@ -22,9 +22,9 @@ make helm-lint   # lint and render the chart
 make test-e2e    # kind + KWOK + Karpenter + k-belt, end to end
 ```
 
-`make test-e2e` needs a Karpenter checkout for its KWOK provider, which has no published image. It
-looks for `../karpenter` and takes `KARPENTER_SRC` to point somewhere else. `KEEP=1` leaves the
-cluster up afterwards.
+`make test-e2e` downloads a pinned `kind` into `bin/` and needs a Karpenter checkout for its KWOK
+provider, which has no published image. It looks for `../karpenter` and takes `KARPENTER_SRC` to
+point somewhere else. `KEEP=1` leaves the cluster up afterwards.
 
 ## Layout
 

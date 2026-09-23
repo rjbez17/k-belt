@@ -13,7 +13,8 @@ KARPENTER_IMG="${KARPENTER_IMG:-karpenter-kwok:e2e}"
 IMG="${IMG:-k-belt:dev}"
 E2E_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${E2E_DIR}/../.." && pwd)"
-KIND="${KIND:-${ROOT_DIR}/bin/kind}"
+# `make test-e2e` downloads a pinned kind into bin/ and passes it in; fall back to PATH otherwise.
+KIND="${KIND:-$(command -v kind || echo "${ROOT_DIR}/bin/kind")}"
 
 kubectl() { command kubectl --context "${KUBE_CONTEXT}" "$@"; }
 log() { printf '\n\033[1m== %s\033[0m\n' "$*"; }

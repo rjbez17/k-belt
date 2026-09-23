@@ -13,6 +13,11 @@ COMPOSE ?= docker compose
 IMG ?= k-belt:dev
 RENDERED_CHART ?= /tmp/k-belt-rendered.yaml
 
+# kind runs on the host, since it drives the host's Docker daemon.
+KIND_VERSION ?= v0.30.0
+KIND ?= $(PWD)/bin/kind
+KIND_PLATFORM := $(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+
 # Forwarded to the dev container: make <target> == docker compose run dev make <target>
 CONTAINER_TARGETS := manifests generate fmt vet test lint lint-fix lint-config karpenter-crds
 
@@ -58,9 +63,14 @@ docs-build: ## Build the documentation site the way GitHub Pages does.
 		gem install jekyll jekyll-remote-theme jekyll-seo-tag jekyll-include-cache --no-document -q && \
 		jekyll build -d /tmp/site'
 
+$(KIND):
+	@mkdir -p $(dir $(KIND))
+	curl -fsSLo $(KIND) "https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(KIND_PLATFORM)"
+	chmod +x $(KIND)
+
 .PHONY: test-e2e
-test-e2e: ## Run the kind + KWOK end-to-end tests (KEEP=1 keeps the cluster).
-	./hack/e2e/run.sh
+test-e2e: $(KIND) ## Run the kind + KWOK end-to-end tests (KEEP=1 keeps the cluster).
+	KIND=$(KIND) ./hack/e2e/run.sh
 
 .PHONY: shell
 shell: ## Open a shell in the dev container.
