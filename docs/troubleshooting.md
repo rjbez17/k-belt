@@ -34,6 +34,9 @@ kubectl get nodeclaim <name> -o jsonpath='{.metadata.annotations}'
 NodeClaims carrying `bestbefore.k-belt.io/paused` are skipped, which is the point of that
 annotation.
 
+If the policy sets `maxConcurrent`, a `STALE` count above `DRIFTED` is the cap doing its job: the
+rest are queued and re-checked every 30 seconds.
+
 ## Nodes are marked but never replaced
 
 `DRIFTED` sits at the same number for hours. k-belt has done its part, so the answer is on

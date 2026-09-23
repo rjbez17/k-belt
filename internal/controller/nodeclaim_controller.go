@@ -29,6 +29,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/events"
 	"k8s.io/utils/clock"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -48,6 +50,9 @@ const (
 	EventReasonDrifted = "BestBeforeExceeded"
 	// EventReasonRestored is emitted on a NodeClaim when k-belt undoes its drift.
 	EventReasonRestored = "BestBeforeRestored"
+
+	// concurrencyRetryInterval is how long a NodeClaim waits for a maxConcurrent slot to free up.
+	concurrencyRetryInterval = 30 * time.Second
 
 	// restoreRetryInterval is how long to wait when a restore can't pick a safe hash yet,
 	// e.g. while Karpenter is migrating hashes to a new hash version.
@@ -134,7 +139,7 @@ func (r *NodeClaimReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	var err error
 	switch {
 	case owner != nil && !driftedByBestBefore(nodeClaim):
-		err = r.drift(ctx, owner, nodeClaim)
+		retryAfter, err = r.driftWithinLimit(ctx, owner, nodeClaim)
 	case owner != nil && nodeClaim.Annotations[bestbeforev1alpha1.PolicyAnnotationKey] != owner.Name:
 		err = r.reattribute(ctx, owner, nodeClaim)
 	case owner == nil && driftedByBestBefore(nodeClaim):
@@ -150,6 +155,80 @@ func (r *NodeClaimReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 	return r.requeue(nextStale, retryAfter), nil
+}
+
+// driftWithinLimit drifts the NodeClaim unless the policy's maxConcurrent is already taken, in
+// which case it asks to look again once a replacement should have freed a slot.
+func (r *NodeClaimReconciler) driftWithinLimit(ctx context.Context, owner *bestbeforev1alpha1.BestBefore, nodeClaim *karpv1.NodeClaim) (time.Duration, error) {
+	if owner.Spec.MaxConcurrent == nil {
+		return 0, r.drift(ctx, owner, nodeClaim)
+	}
+	admitted, err := r.admitted(ctx, owner)
+	if err != nil {
+		return 0, err
+	}
+	if !admitted.Has(nodeClaim.Name) {
+		logf.FromContext(ctx).V(1).Info("waiting for a maxConcurrent slot", "BestBefore", owner.Name,
+			"maxConcurrent", *owner.Spec.MaxConcurrent)
+		return concurrencyRetryInterval, nil
+	}
+	return 0, r.drift(ctx, owner, nodeClaim)
+}
+
+// admitted returns the NodeClaims the policy may drift right now: the oldest stale ones that fit
+// in whatever maxConcurrent leaves after the NodeClaims it has already drifted.
+//
+// The counts come from the controller's cache, so a NodeClaim drifted moments ago may not be
+// counted yet and a policy can briefly exceed its limit. Karpenter's disruption budgets still
+// bound what that actually disrupts.
+func (r *NodeClaimReconciler) admitted(ctx context.Context, policy *bestbeforev1alpha1.BestBefore) (sets.Set[string], error) {
+	selector, err := metav1.LabelSelectorAsSelector(&policy.Spec.NodeClaimSelector)
+	if err != nil {
+		return nil, nil // An unparseable selector matches nothing, as in evaluate.
+	}
+	matched := &karpv1.NodeClaimList{}
+	// Read-only counting, so skip the per-object copy the cache would otherwise make.
+	if err := r.List(ctx, matched, client.MatchingLabelsSelector{Selector: selector}, client.UnsafeDisableDeepCopy); err != nil {
+		return nil, fmt.Errorf("listing nodeclaims for %s: %w", policy.Name, err)
+	}
+
+	now := r.Clock.Now()
+	var inFlight int
+	var candidates []*karpv1.NodeClaim
+	for i := range matched.Items {
+		nodeClaim := &matched.Items[i]
+		if driftedBy(nodeClaim, policy.Name) {
+			// Still occupies a slot while Karpenter drains and replaces it.
+			inFlight++
+			continue
+		}
+		_, paused := nodeClaim.Annotations[bestbeforev1alpha1.PausedAnnotationKey]
+		_, reverted := nodeClaim.Annotations[bestbeforev1alpha1.RevertAnnotationKey]
+		if paused || reverted || !nodeClaim.DeletionTimestamp.IsZero() || now.Before(staleAt(nodeClaim, policy)) {
+			continue
+		}
+		candidates = append(candidates, nodeClaim)
+	}
+
+	// Percentages are of everything the selector matches, and round up so small pools still move.
+	limit, err := intstr.GetScaledValueFromIntOrPercent(new(intstr.Parse(*policy.Spec.MaxConcurrent)), len(matched.Items), true)
+	if err != nil {
+		// The CRD pattern makes this unreachable; drifting nothing is the safe way to be wrong.
+		return nil, fmt.Errorf("parsing maxConcurrent %q of %s: %w", *policy.Spec.MaxConcurrent, policy.Name, err)
+	}
+	free := min(limit-inFlight, len(candidates))
+	if free <= 0 {
+		return nil, nil
+	}
+	// Oldest first, so a capped rollout replaces the nodes closest to expireAfter first.
+	slices.SortFunc(candidates, func(a, b *karpv1.NodeClaim) int {
+		return cmp.Or(a.CreationTimestamp.Compare(b.CreationTimestamp.Time), cmp.Compare(a.Name, b.Name))
+	})
+	admitted := sets.New[string]()
+	for _, nodeClaim := range candidates[:free] {
+		admitted.Insert(nodeClaim.Name)
+	}
+	return admitted, nil
 }
 
 // requeue schedules the soonest of the given deadlines, never later than the resync period.

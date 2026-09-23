@@ -28,7 +28,8 @@ spot-pool      168h      18        0       0         2m11s
 | `STALE` | Matched NodeClaims older than `maxAge` |
 | `DRIFTED` | NodeClaims this policy has marked that Karpenter hasn't replaced yet |
 
-In a healthy rotation `DRIFTED` tracks `STALE` and both fall to zero. `STALE` well above `DRIFTED`
+In a healthy rotation `DRIFTED` tracks `STALE` and both fall to zero, unless the policy sets
+`maxConcurrent`, in which case `DRIFTED` sits at the cap while the rest queue. `STALE` well above `DRIFTED`
 means k-belt could not mark some nodes: they are paused, another policy owns them, or they are
 missing Karpenter's hash annotations.
 

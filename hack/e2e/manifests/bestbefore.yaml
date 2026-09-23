@@ -7,4 +7,6 @@ spec:
     matchLabels:
       karpenter.sh/nodepool: default
   maxAge: 60s
+  # Half the pool at a time, so the e2e asserts k-belt's own cap as well as Karpenter's budget.
+  maxConcurrent: "50%"
   taintDriftedNodes: true
