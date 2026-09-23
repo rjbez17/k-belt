@@ -11,7 +11,7 @@ nav_order: 3
 | Flag | Default | Meaning |
 | --- | --- | --- |
 | `--bestbefore-resync-period` | `5m` | How often every NodeClaim is re-evaluated, on top of its exact `maxAge` deadline. Minimum `10s`. |
-| `--metrics-bind-address` | `:8443` | Metrics endpoint. `0` disables it. |
+| `--metrics-bind-address` | `0` (disabled) | Metrics endpoint. The chart sets `:8443`. |
 | `--metrics-secure` | `true` | Require authn/authz on the metrics endpoint. |
 | `--health-probe-bind-address` | `:8081` | Health and readiness probes. |
 | `--leader-elect` | `false` | Leader election. The chart sets it. |

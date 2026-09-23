@@ -42,6 +42,11 @@ metrics:
     enabled: false
     labels: {}
     interval: 30s
+    # -- TLS for the scrape. The controller serves a self-signed certificate unless you give it
+    # one, so verification is off by default. Point this at your CA once you do: the scrape sends
+    # a bearer token, and without verification an in-cluster interceptor could capture it.
+    tlsConfig:
+      insecureSkipVerify: true
 
 # -- Pod resources. The controller's cost scales with NodeClaim count.
 resources:

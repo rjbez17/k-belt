@@ -71,6 +71,7 @@ func (r *BestBeforeReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if err != nil {
 		// An invalid selector won't fix itself; report it and wait for a spec change.
 		deleteBestBeforeMetrics(bestBefore.Name)
+		bestBefore.Status.ObservedGeneration = bestBefore.Generation
 		r.setReady(bestBefore, metav1.ConditionFalse, "InvalidSelector", err.Error())
 		return ctrl.Result{}, r.patchStatus(ctx, stored, bestBefore)
 	}
