@@ -76,6 +76,10 @@ spec:
 Use `maxConcurrent` with [`taintDriftedNodes`](#taintdriftednodes) to limit how many nodes carry
 the taint at one time.
 
+If a policy takes over a NodeClaim another policy had already marked, because that policy no longer
+applies, the NodeClaim counts against the new policy's limit. k-belt does not undo the drift to fit
+the limit, since Karpenter is already replacing that node.
+
 {: .note }
 > k-belt counts drifted NodeClaims from its cache, so if two NodeClaims are marked at nearly the
 > same time a policy can briefly exceed its limit. Karpenter's disruption budgets still apply.

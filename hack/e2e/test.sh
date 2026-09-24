@@ -6,8 +6,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 NODES="${NODES:-6}"          # replicas, and with one pod per node, nodes
 BUDGET_NODES=1               # NodePool disruption budget in manifests/nodepool.yaml
-# manifests/bestbefore.yaml sets maxConcurrent: 50%, rounded up, so it tracks NODES.
-MAX_CONCURRENT=$(( (NODES + 1) / 2 ))
+MAX_CONCURRENT=3             # maxConcurrent in manifests/bestbefore.yaml
 ROLLOUT_TIMEOUT="${ROLLOUT_TIMEOUT:-360}"
 
 fail() { printf '\033[31mFAIL: %s\033[0m\n' "$*" >&2; exit 1; }
