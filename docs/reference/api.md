@@ -74,6 +74,10 @@ spec:
 The count comes from the controller's cache, so a policy can briefly exceed its cap if two
 NodeClaims are marked within the same moment. Karpenter's budgets still bound what that disrupts.
 
+A cap also makes [`taintDriftedNodes`](#taintdriftednodes) practical: it bounds how many nodes wear
+the taint at once, so the scheduling distortion the warning below describes covers a few nodes
+instead of the whole pool.
+
 ### taintDriftedNodes
 
 Optional, defaults to `false`. Adds `bestbefore.k-belt.io/drifted:PreferNoSchedule` to the Node of
@@ -86,6 +90,11 @@ The taint is removed if the drift is undone.
 > this on, Karpenter may launch capacity for pods that would have fitted on tainted nodes, and
 > consolidate less while a rotation runs. Adding any `PreferNoSchedule` taint to the NodePool
 > template makes Karpenter relax these back into preferences.
+
+Pair it with [`maxConcurrent`](#maxconcurrent). The taint is what keeps evicted pods off nodes that
+are themselves about to be replaced, and the cap is what stops that distortion covering the whole
+pool: with `maxConcurrent: "3"` at most three nodes are tainted at any moment, however many are
+stale.
 
 ## status
 

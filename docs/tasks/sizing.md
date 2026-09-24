@@ -61,6 +61,9 @@ Reach for it when:
 * **You want the oldest nodes replaced first.** Karpenter orders drifted nodes by when it noticed
   them. Under a cap, k-belt only marks the oldest stale NodeClaims, so age decides the order.
 * **You are phasing a policy in** and want a handful of nodes to move before the rest.
+* **You want `taintDriftedNodes` on.** The taint stops evicted pods landing on nodes that are next
+  to go, and the cap stops it covering the whole pool. The two are much more useful together than
+  either is alone.
 
 The rollout is then paced by whichever is tighter. A cap below the budget slows the rollout without
 changing how Karpenter replaces each node, so remember to fold it into the headroom arithmetic

@@ -83,6 +83,18 @@ pods — Karpenter's simulation and the kube-scheduler both treat them as ordina
 moved onto a node that is itself replaced a few minutes later.
 
 Karpenter's own drift behaves the same way after an AMI or NodeClass change. A larger budget shortens
-the window. If it matters for your workloads, `taintDriftedNodes` adds a `PreferNoSchedule` taint to
-marked nodes; read the caveat in the
-[API reference]({{ site.baseurl }}/reference/api/#taintdriftednodes) before turning it on.
+the window.
+
+If it matters for your workloads, set `taintDriftedNodes` **and** `maxConcurrent` together. The
+taint keeps evicted pods off nodes that are next in line; the cap keeps the taint on a handful of
+nodes at a time. Turning the taint on by itself means every stale node in the pool wears it at
+once, and Karpenter's simulation reads a `PreferNoSchedule` taint on an existing node as a hard
+constraint, so it stops counting most of your fleet as somewhere pods could go — see the caveat in
+the [API reference]({{ site.baseurl }}/reference/api/#taintdriftednodes).
+
+```yaml
+spec:
+  maxAge: 504h
+  maxConcurrent: "3"
+  taintDriftedNodes: true
+```
