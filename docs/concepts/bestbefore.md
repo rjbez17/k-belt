@@ -57,7 +57,7 @@ k-belt handles two awkward cases here:
 
 * **Karpenter changed its hash format.** Karpenter versions its hashes with
   `karpenter.sh/nodepool-hash-version`. If that version has moved on since the drift, the saved hash
-  is stale, so k-belt restores the NodePool's current hash instead — the same thing Karpenter's own
+  is stale, so k-belt restores the NodePool's current hash instead, which is what Karpenter's own
   migration does.
 * **Karpenter already started replacing the node.** Once the disruption controller has taken the
   node, restoring the hash cannot call that off. k-belt leaves those NodeClaims alone rather than
@@ -73,8 +73,8 @@ Several policies can match the same NodeClaim. A node is rotated as soon as *any
 considers it too old, and exactly one policy owns the result, recorded in
 `bestbefore.k-belt.io/policy`.
 
-The owner keeps ownership while its own `maxAge` still applies. When it no longer does — usually
-because the policy was deleted — another policy that still considers the node stale takes over. If
+The owner keeps ownership while its own `maxAge` still applies. When it no longer does, usually
+because the policy was deleted, another policy that still considers the node stale takes over. If
 none does, the node is restored. When there is no incumbent, the policy with the shortest `maxAge`
 wins, and ties are broken by name.
 
@@ -84,9 +84,9 @@ policies can add up to more than the number of nodes you have.
 ## Keeping the mark in place
 
 k-belt is level triggered: every reconcile asks what the NodeClaim should look like now and fixes it
-if it doesn't. If something else rewrites the hash while the node is still too old — a Karpenter
-upgrade that migrates hash versions, or an operator with `kubectl annotate` — k-belt marks it again
-on the next pass.
+if it doesn't. If something else rewrites the hash while the node is still too old, such as a
+Karpenter upgrade that migrates hash versions or an operator running `kubectl annotate`, k-belt
+marks it again on the next pass.
 
 Each NodeClaim is also re-checked at least every five minutes, whatever else happens, so a missed
 deadline delays a rotation by minutes rather than indefinitely. See

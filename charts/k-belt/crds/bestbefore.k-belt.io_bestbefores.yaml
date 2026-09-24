@@ -27,6 +27,10 @@ spec:
     - jsonPath: .status.driftedNodeClaims
       name: Drifted
       type: integer
+    - jsonPath: .spec.maxConcurrent
+      name: Max Concurrent
+      priority: 1
+      type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
@@ -67,6 +71,16 @@ spec:
                 x-kubernetes-validations:
                 - message: maxAge must be a positive duration
                   rule: duration(self) > duration('0s')
+              maxConcurrent:
+                description: |-
+                  maxConcurrent caps how many of this policy's NodeClaims may be drifted and awaiting
+                  replacement at once, either as a count ("3") or as a percentage of the NodeClaims the
+                  selector matches ("10%"). Percentages round up, so a policy always makes progress.
+                  Unset means no cap: every stale NodeClaim is drifted at once and the NodePool's disruption
+                  budgets alone pace the rollout. Karpenter's budgets still apply either way.
+                  Cannot be an IntOrString: kubebuilder can't pattern-check the int side of one.
+                pattern: ^((100|[0-9]{1,2})%|[0-9]+)$
+                type: string
               nodeClaimSelector:
                 description: |-
                   nodeClaimSelector selects the Karpenter NodeClaims this policy applies to.
@@ -119,6 +133,9 @@ spec:
                 description: |-
                   taintDriftedNodes adds a bestbefore.k-belt.io/drifted:PreferNoSchedule taint to the Nodes of
                   NodeClaims this policy drifts, so pods prefer nodes that aren't about to be replaced.
+
+                  Use with maxConcurrent, which limits how many NodeClaims are marked and therefore how many
+                  nodes are tainted at one time.
 
                   Warning: Karpenter's scheduling simulation treats PreferNoSchedule taints on existing nodes
                   as hard constraints unless a NodePool template also has a PreferNoSchedule taint. With this

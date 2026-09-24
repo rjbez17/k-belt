@@ -42,6 +42,35 @@ Two settings that do nothing useful:
 * `maxAge` shorter than a rollout: replacement nodes are already too old when they arrive, and the
   pool rotates forever. We have watched a test cluster do exactly this with `maxAge: 60s`.
 
+## Limiting how much rotates at once
+
+Karpenter's `Drifted` budget limits how many nodes it replaces at a time, and for most clusters
+that is the only limit you need. `maxConcurrent` limits how many NodeClaims k-belt marks in the
+first place:
+
+```yaml
+spec:
+  maxAge: 504h
+  maxConcurrent: "10%"
+```
+
+Set it when:
+
+* **The budget is shared.** A budget with no `reasons` counts every kind of disruption, so a large
+  rotation leaves consolidation no room. Limiting the rotation leaves budget for other work.
+* **You want the oldest nodes replaced first.** Karpenter replaces drifted nodes in the order it
+  observed the drift. Under a limit, k-belt only marks the oldest stale NodeClaims, so age decides
+  the order.
+* **You use `taintDriftedNodes`.** The taint stops the scheduler placing pods on marked nodes, and
+  the limit keeps the number of tainted nodes small. See
+  [Pods can move twice]({{ site.baseurl }}/concepts/disruption/#pods-can-move-twice).
+* **You are introducing a policy** to a cluster and want a few nodes replaced before the rest.
+
+The rollout is then paced by whichever limit is lower. Note that a limit below the budget slows the
+rollout without changing how Karpenter replaces each node, so include it in the headroom
+calculation above: `maxConcurrent: "1"` on a 500 node pool is the 83 hour row, whatever the budget
+allows.
+
 ## Rolling it out to an existing cluster
 
 On a cluster that has been running for months, a sensible `maxAge` makes most of the fleet stale at
@@ -67,8 +96,8 @@ Phase it in instead:
    default-pool   1400h     312       4       4         18s
    ```
 
-3. Let that rollout finish — `DRIFTED` back to `0` — then lower `maxAge` a step and repeat until you
-   reach the target.
+3. Wait for that rollout to finish, with `DRIFTED` back to `0`, then lower `maxAge` a step and
+   repeat until you reach the target.
 
 Each pass resets the creation times of the nodes it replaces, which spreads future expiry out. After
 one full rotation the fleet stops arriving at `maxAge` in a single wave.

@@ -19,7 +19,7 @@ For each drifted node, Karpenter checks the NodePool's disruption budget, simula
 pods would go, launches any replacement capacity it needs, waits for it to be ready, then taints and
 drains the old node. Empty nodes go first, and the oldest drift goes before the newest.
 
-Because replacements are pre-spun, a rotation costs you extra capacity while it runs — up to your
+Because replacements are pre-spun, a rotation costs extra capacity while it runs, up to your
 budget's worth of nodes on top of what you normally run.
 
 ## Budgets set the pace
@@ -79,10 +79,24 @@ disruption must always win, and accept that `expireAfter` becomes the only limit
 ## Pods can move twice
 
 While a rotation runs, other nodes that are also too old are still valid destinations for evicted
-pods — Karpenter's simulation and the kube-scheduler both treat them as ordinary nodes. A pod can be
-moved onto a node that is itself replaced a few minutes later.
+pods. Karpenter's simulation and the kube-scheduler both treat them as ordinary nodes, so a pod can
+be moved onto a node that is itself replaced a few minutes later.
 
-Karpenter's own drift behaves the same way after an AMI or NodeClass change. A larger budget shortens
-the window. If it matters for your workloads, `taintDriftedNodes` adds a `PreferNoSchedule` taint to
-marked nodes; read the caveat in the
-[API reference]({{ site.baseurl }}/reference/api/#taintdriftednodes) before turning it on.
+Karpenter's own drift behaves the same way after an AMI or NodeClass change. A larger budget
+shortens the window.
+
+If this matters for your workloads, set `taintDriftedNodes` together with `maxConcurrent`. The
+taint stops the scheduler placing pods on nodes k-belt has marked, and `maxConcurrent` limits how
+many nodes are marked, and therefore tainted, at one time. Without a limit every stale node in the
+pool is tainted at once, and Karpenter's scheduling simulation treats a `PreferNoSchedule` taint on
+an existing node as a hard constraint, so it will provision capacity for pods that would otherwise
+have fit on those nodes. For example:
+
+```yaml
+spec:
+  maxAge: 504h
+  maxConcurrent: "3"
+  taintDriftedNodes: true
+```
+
+See [taintDriftedNodes]({{ site.baseurl }}/reference/api/#taintdriftednodes) for the full caveat.
