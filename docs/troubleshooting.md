@@ -35,7 +35,8 @@ NodeClaims carrying `bestbefore.k-belt.io/paused` are skipped, which is the poin
 annotation.
 
 If the policy sets `maxConcurrent`, `STALE` will exceed `DRIFTED` until the rotation completes.
-k-belt re-checks the remaining NodeClaims every 30 seconds and marks the oldest as slots free up.
+k-belt re-checks the remaining NodeClaims every 30 seconds, and each time a slot frees up it marks
+the oldest of them.
 
 ## Nodes are marked but never replaced
 
