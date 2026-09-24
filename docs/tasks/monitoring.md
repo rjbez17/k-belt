@@ -29,9 +29,12 @@ spot-pool      168h      18        0       0         2m11s
 | `DRIFTED` | NodeClaims this policy has marked that Karpenter hasn't replaced yet |
 
 In a healthy rotation `DRIFTED` tracks `STALE` and both fall to zero. If the policy sets
-`maxConcurrent`, `DRIFTED` will stay at that limit until the rotation completes. `STALE` well above `DRIFTED`
-means k-belt could not mark some nodes: they are paused, another policy owns them, or they are
-missing Karpenter's hash annotations.
+`maxConcurrent`, `DRIFTED` stays at that limit and `STALE` stays above it until the rotation
+completes, which is expected.
+
+Without a limit, a `STALE` count that stays above `DRIFTED` means k-belt could not mark those
+NodeClaims: they are paused, another policy owns them, or they are missing Karpenter's hash
+annotations.
 
 The `Ready` condition carries configuration problems, such as a selector the API server accepted but
 k-belt cannot parse:

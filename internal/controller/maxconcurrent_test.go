@@ -184,6 +184,50 @@ var _ = Describe("maxConcurrent", func() {
 		Expect(driftedByBestBefore(expectNodeClaim(newest))).To(BeFalse())
 	})
 
+	It("doesn't let another policy's drifted NodeClaim take a slot", func() {
+		older := nodeClaimFor(nodePool, nil)
+		ExpectApplied(ctx, k8sClient, older)
+		time.Sleep(1100 * time.Millisecond)
+		newer := nodeClaimFor(nodePool, nil)
+		ExpectApplied(ctx, k8sClient, newer)
+
+		// A second policy, matching the same NodeClaims and with the longer maxAge, marks the
+		// older one and keeps owning it.
+		theirs := withMaxAge(bestBeforeFor(nil), 2*testMaxAge)
+		ExpectApplied(ctx, k8sClient, theirs)
+		clk.Step(3 * testMaxAge)
+		ExpectReconciled(ctx, reconciler, requestFor(older))
+		Expect(driftedBy(expectNodeClaim(older), theirs.Name)).To(BeTrue())
+
+		// Ours has the shorter maxAge, so it owns whatever is still unmarked. Its single slot must
+		// go to its own candidate, not to the NodeClaim the other policy is already replacing.
+		mine := bestBeforeFor(nil)
+		mine.Spec.MaxConcurrent = new("1")
+		ExpectApplied(ctx, k8sClient, mine)
+
+		ExpectReconciled(ctx, reconciler, requestFor(newer))
+
+		Expect(driftedBy(expectNodeClaim(newer), mine.Name)).To(BeTrue())
+	})
+
+	It("skips NodeClaims without Karpenter's hash annotations when filling slots", func() {
+		unmarkable := nodeClaimFor(nodePool, nil)
+		delete(unmarkable.Annotations, karpv1.NodePoolHashAnnotationKey)
+		ExpectApplied(ctx, k8sClient, unmarkable)
+		time.Sleep(1100 * time.Millisecond) // older than the one that can be marked
+		markable := nodeClaimFor(nodePool, nil)
+		ExpectApplied(ctx, k8sClient, markable)
+		policy := bestBeforeFor(nil)
+		policy.Spec.MaxConcurrent = new("1")
+		ExpectApplied(ctx, k8sClient, policy)
+		clk.Step(2 * testMaxAge)
+
+		// The oldest NodeClaim can never be marked, so it must not hold the slot.
+		ExpectReconciled(ctx, reconciler, requestFor(markable))
+
+		Expect(driftedByBestBefore(expectNodeClaim(markable))).To(BeTrue())
+	})
+
 	It("ignores paused NodeClaims when counting slots", func() {
 		claims := staleNodeClaims(2)
 		patchAnnotations(claims[0], map[string]string{bestbeforev1alpha1.PausedAnnotationKey: annotationSet})

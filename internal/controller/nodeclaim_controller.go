@@ -202,12 +202,9 @@ func (r *NodeClaimReconciler) admitted(ctx context.Context, policy *bestbeforev1
 			inFlight++
 			continue
 		}
-		_, paused := nodeClaim.Annotations[bestbeforev1alpha1.PausedAnnotationKey]
-		_, reverted := nodeClaim.Annotations[bestbeforev1alpha1.RevertAnnotationKey]
-		if paused || reverted || !nodeClaim.DeletionTimestamp.IsZero() || now.Before(staleAt(nodeClaim, policy)) {
-			continue
+		if markable(nodeClaim, policy, now) {
+			candidates = append(candidates, nodeClaim)
 		}
-		candidates = append(candidates, nodeClaim)
 	}
 
 	// Percentages are of everything the selector matches, and round up so small pools still move.
@@ -229,6 +226,29 @@ func (r *NodeClaimReconciler) admitted(ctx context.Context, policy *bestbeforev1
 		admitted.Insert(nodeClaim.Name)
 	}
 	return admitted, nil
+}
+
+// markable reports whether the policy could mark this NodeClaim right now. A NodeClaim that can't
+// be marked must not take a slot, or it would hold one every pass and stall the rollout behind it.
+func markable(nodeClaim *karpv1.NodeClaim, policy *bestbeforev1alpha1.BestBefore, now time.Time) bool {
+	// Drifted by another policy: that policy's business, and drift would do nothing here anyway.
+	if driftedByBestBefore(nodeClaim) {
+		return false
+	}
+	if _, paused := nodeClaim.Annotations[bestbeforev1alpha1.PausedAnnotationKey]; paused {
+		return false
+	}
+	if _, reverted := nodeClaim.Annotations[bestbeforev1alpha1.RevertAnnotationKey]; reverted {
+		return false
+	}
+	// drift skips NodeClaims without both hash annotations, since Karpenter's static drift check
+	// ignores them.
+	_, hasHash := nodeClaim.Annotations[karpv1.NodePoolHashAnnotationKey]
+	_, hasVersion := nodeClaim.Annotations[karpv1.NodePoolHashVersionAnnotationKey]
+	if !hasHash || !hasVersion {
+		return false
+	}
+	return nodeClaim.DeletionTimestamp.IsZero() && !now.Before(staleAt(nodeClaim, policy))
 }
 
 // requeue schedules the soonest of the given deadlines, never later than the resync period.
