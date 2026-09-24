@@ -28,8 +28,8 @@ spot-pool      168h      18        0       0         2m11s
 | `STALE` | Matched NodeClaims older than `maxAge` |
 | `DRIFTED` | NodeClaims this policy has marked that Karpenter hasn't replaced yet |
 
-In a healthy rotation `DRIFTED` tracks `STALE` and both fall to zero, unless the policy sets
-`maxConcurrent`, in which case `DRIFTED` sits at the cap while the rest queue. `STALE` well above `DRIFTED`
+In a healthy rotation `DRIFTED` tracks `STALE` and both fall to zero. If the policy sets
+`maxConcurrent`, `DRIFTED` will stay at that limit until the rotation completes. `STALE` well above `DRIFTED`
 means k-belt could not mark some nodes: they are paused, another policy owns them, or they are
 missing Karpenter's hash annotations.
 
@@ -53,8 +53,8 @@ kubectl get events --field-selector involvedObject.kind=NodeClaim | grep BestBef
 1m   Normal   BestBeforeRestored   nodeclaim/default-gjpbg   No BestBefore considers the NodeClaim stale any more (previously drifted by default-pool); restored its nodepool hash
 ```
 
-Karpenter's own events on the Node explain the other half — why a marked node has not been replaced
-yet. `DisruptionBlocked` is the one to look for.
+Karpenter's own events on the Node explain why a marked node has not been replaced yet. Look for
+`DisruptionBlocked`.
 
 ## Metrics
 
@@ -85,6 +85,6 @@ force-expired instead. Alert on the age of the oldest outstanding drift:
 Pick a threshold from your own numbers: comfortably longer than a normal rollout, comfortably shorter
 than `expireAfter - maxAge`.
 
-To scrape a metrics endpoint protected by authn/authz — the chart default — bind your scraper's
-ServiceAccount to the `k-belt-metrics-reader` ClusterRole, or set `metrics.serviceMonitor.enabled` if
-you run the Prometheus Operator.
+The chart protects the metrics endpoint with authn/authz by default. To scrape it, bind your
+scraper's ServiceAccount to the `k-belt-metrics-reader` ClusterRole, or set
+`metrics.serviceMonitor.enabled` if you run the Prometheus Operator.

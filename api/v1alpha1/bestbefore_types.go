@@ -48,8 +48,8 @@ type BestBeforeSpec struct {
 	// taintDriftedNodes adds a bestbefore.k-belt.io/drifted:PreferNoSchedule taint to the Nodes of
 	// NodeClaims this policy drifts, so pods prefer nodes that aren't about to be replaced.
 	//
-	// Best paired with maxConcurrent, which bounds how many nodes carry the taint at once: pods
-	// still avoid the handful on their way out, without most of the pool looking unschedulable.
+	// Use with maxConcurrent, which limits how many NodeClaims are marked and therefore how many
+	// nodes are tainted at one time.
 	//
 	// Warning: Karpenter's scheduling simulation treats PreferNoSchedule taints on existing nodes
 	// as hard constraints unless a NodePool template also has a PreferNoSchedule taint. With this

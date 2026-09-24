@@ -42,11 +42,11 @@ Two settings that do nothing useful:
 * `maxAge` shorter than a rollout: replacement nodes are already too old when they arrive, and the
   pool rotates forever. We have watched a test cluster do exactly this with `maxAge: 60s`.
 
-## Capping how much rotates at once
+## Limiting how much rotates at once
 
-Karpenter's `Drifted` budget already limits how many nodes it replaces at a time, and for most
-clusters that is the only throttle you need. `maxConcurrent` limits how many NodeClaims k-belt
-marks in the first place:
+Karpenter's `Drifted` budget limits how many nodes it replaces at a time, and for most clusters
+that is the only limit you need. `maxConcurrent` limits how many NodeClaims k-belt marks in the
+first place:
 
 ```yaml
 spec:
@@ -54,20 +54,22 @@ spec:
   maxConcurrent: "10%"
 ```
 
-Reach for it when:
+Set it when:
 
-* **The budget is shared.** A budget without `reasons` counts every kind of disruption, so a large
-  rotation crowds out consolidation. Capping the rotation leaves the budget room for other work.
-* **You want the oldest nodes replaced first.** Karpenter orders drifted nodes by when it noticed
-  them. Under a cap, k-belt only marks the oldest stale NodeClaims, so age decides the order.
-* **You are phasing a policy in** and want a handful of nodes to move before the rest.
-* **You want `taintDriftedNodes` on.** The taint stops evicted pods landing on nodes that are next
-  to go, and the cap stops it covering the whole pool. The two are much more useful together than
-  either is alone.
+* **The budget is shared.** A budget with no `reasons` counts every kind of disruption, so a large
+  rotation leaves consolidation no room. Limiting the rotation leaves budget for other work.
+* **You want the oldest nodes replaced first.** Karpenter replaces drifted nodes in the order it
+  observed the drift. Under a limit, k-belt only marks the oldest stale NodeClaims, so age decides
+  the order.
+* **You use `taintDriftedNodes`.** The taint stops the scheduler placing pods on marked nodes, and
+  the limit keeps the number of tainted nodes small. See
+  [Pods can move twice]({{ site.baseurl }}/concepts/disruption/#pods-can-move-twice).
+* **You are introducing a policy** to a cluster and want a few nodes replaced before the rest.
 
-The rollout is then paced by whichever is tighter. A cap below the budget slows the rollout without
-changing how Karpenter replaces each node, so remember to fold it into the headroom arithmetic
-above: `maxConcurrent: "1"` on a 500-node pool is the 83-hour row, whatever the budget says.
+The rollout is then paced by whichever limit is lower. Note that a limit below the budget slows the
+rollout without changing how Karpenter replaces each node, so include it in the headroom
+calculation above: `maxConcurrent: "1"` on a 500 node pool is the 83 hour row, whatever the budget
+allows.
 
 ## Rolling it out to an existing cluster
 
@@ -94,8 +96,8 @@ Phase it in instead:
    default-pool   1400h     312       4       4         18s
    ```
 
-3. Let that rollout finish — `DRIFTED` back to `0` — then lower `maxAge` a step and repeat until you
-   reach the target.
+3. Wait for that rollout to finish, with `DRIFTED` back to `0`, then lower `maxAge` a step and
+   repeat until you reach the target.
 
 Each pass resets the creation times of the nodes it replaces, which spreads future expiry out. After
 one full rotation the fleet stops arriving at `maxAge` in a single wave.

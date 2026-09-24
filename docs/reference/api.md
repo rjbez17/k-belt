@@ -40,8 +40,8 @@ An empty selector (`{}`) matches every NodeClaim in the cluster.
 ### maxAge
 
 Required. How long a NodeClaim may live, measured from its `creationTimestamp`. A Go duration
-string, so `504h` rather than `21d`, and it must be positive — the API server rejects `0s`, negative
-values and anything it cannot parse.
+string, so `504h` rather than `21d`, and it must be positive. The API server rejects `0s`, negative
+values, and anything it cannot parse.
 
 Reaching `maxAge` marks the NodeClaim as drifted. Karpenter decides when it is actually replaced,
 which is why `maxAge` is not a guaranteed maximum node lifetime. Keep `expireAfter` for that, and
@@ -49,21 +49,23 @@ see [Sizing maxAge]({{ site.baseurl }}/tasks/sizing/).
 
 ### maxConcurrent
 
-Optional. Caps how many of this policy's NodeClaims may be drifted and awaiting replacement at
-once, as a count (`"3"`) or a percentage of the NodeClaims the selector matches (`"10%"`). Both
-forms are strings.
+Optional. Limits the number of NodeClaims this policy can have drifted at one time, either as a
+count (`"3"`) or as a percentage of the NodeClaims its selector matches (`"10%"`). If undefined,
+k-belt marks every stale NodeClaim at once, and the NodePool's disruption budgets alone pace the
+rollout.
 
-Unset means no cap: every stale NodeClaim is marked at once and the NodePool's disruption budgets
-alone pace the rollout. Setting it adds a second, policy-level throttle on top of those budgets —
-whichever is tighter wins.
+If the value is a percentage, k-belt calculates the number it may mark as
+`allowed = roundup(matched * percentage) - already_drifted`. If the value is a count, k-belt uses
+that number as a static ceiling, `max_concurrent - already_drifted`. Percentages are calculated
+from every NodeClaim the selector matches, not only the stale ones. For instance, a policy matching
+6 NodeClaims with `maxConcurrent: "10%"` may have 1 NodeClaim drifted at a time, rounding up from
+`6 * .1 = 0.6`.
 
-Percentages are of everything the selector matches, not just the stale ones, and round up, so a
-small pool still makes progress: `10%` of 6 NodeClaims allows 1.
-
-A slot is occupied from the moment k-belt marks a NodeClaim until that NodeClaim is gone, including
-while Karpenter drains it. When slots are full, the remaining stale NodeClaims are re-checked every
-30 seconds, and the **oldest** of them goes next — which is worth knowing, because without a cap
-Karpenter replaces drifted nodes in the order it noticed them rather than by age.
+A NodeClaim counts against the limit from the time k-belt marks it until the NodeClaim is removed,
+including while Karpenter drains it. Once the limit is reached, k-belt re-checks the remaining
+stale NodeClaims every 30 seconds and marks the oldest of them as slots free up. Karpenter
+otherwise replaces drifted nodes in the order it observed the drift, so a limit is also how you get
+the oldest nodes replaced first.
 
 ```yaml
 spec:
@@ -71,12 +73,12 @@ spec:
   maxConcurrent: "10%"
 ```
 
-The count comes from the controller's cache, so a policy can briefly exceed its cap if two
-NodeClaims are marked within the same moment. Karpenter's budgets still bound what that disrupts.
+Use `maxConcurrent` with [`taintDriftedNodes`](#taintdriftednodes) to limit how many nodes carry
+the taint at one time.
 
-A cap also makes [`taintDriftedNodes`](#taintdriftednodes) practical: it bounds how many nodes wear
-the taint at once, so the scheduling distortion the warning below describes covers a few nodes
-instead of the whole pool.
+{: .note }
+> k-belt counts drifted NodeClaims from its cache, so if two NodeClaims are marked at nearly the
+> same time a policy can briefly exceed its limit. Karpenter's disruption budgets still apply.
 
 ### taintDriftedNodes
 
@@ -91,10 +93,9 @@ The taint is removed if the drift is undone.
 > consolidate less while a rotation runs. Adding any `PreferNoSchedule` taint to the NodePool
 > template makes Karpenter relax these back into preferences.
 
-Pair it with [`maxConcurrent`](#maxconcurrent). The taint is what keeps evicted pods off nodes that
-are themselves about to be replaced, and the cap is what stops that distortion covering the whole
-pool: with `maxConcurrent: "3"` at most three nodes are tainted at any moment, however many are
-stale.
+Use this with [`maxConcurrent`](#maxconcurrent), which limits how many NodeClaims the policy marks
+at one time and therefore how many nodes are tainted. With `maxConcurrent: "3"`, at most three
+nodes are tainted, however many are stale.
 
 ## status
 

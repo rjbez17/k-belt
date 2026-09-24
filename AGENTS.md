@@ -7,21 +7,21 @@ A file for [guiding coding agents](https://agents.md/).
 Everything runs in Docker; the top-level Makefile forwards each target into the `dev` compose
 service, and kubebuilder's own targets live in `hack/container.mk`.
 
-- **Test:** `make test` — codegen, `go vet`, then the envtest suites. Target one package with
+- **Test:** `make test` runs codegen, `go vet`, then the envtest suites. Target one package with
   `docker compose run --rm dev go test ./internal/controller/ -run TestControllers`, or focus a
   spec with `-ginkgo.focus="<text>"`.
 - **Lint:** `make lint` (golangci-lint with the logcheck plugin).
-- **Codegen:** `make manifests generate` — writes `api/v1alpha1/zz_generated.deepcopy.go`, the
+- **Codegen:** `make manifests generate` writes `api/v1alpha1/zz_generated.deepcopy.go`, the
   chart's CRD under `charts/k-belt/crds/`, and `charts/k-belt/rbac-rules.yaml`. CI fails if the
   committed copies drift, so run it after touching API types or `+kubebuilder` markers.
 - **Chart:** `make helm-lint` lints and renders it.
-- **End to end:** `make test-e2e` — kind + KWOK + Karpenter + k-belt, about five minutes.
+- **End to end:** `make test-e2e` runs kind + KWOK + Karpenter + k-belt, about five minutes.
   `KEEP=1` leaves the cluster up. Needs a Karpenter checkout at `../karpenter` (`KARPENTER_SRC`).
 
 ## Layout
 
 - API types and every annotation, taint and hash key: `api/v1alpha1/`
-- Controllers: `internal/controller/` — `nodeclaim_controller.go` owns all NodeClaim changes,
+- Controllers: `internal/controller/`, `nodeclaim_controller.go` owns all NodeClaim changes,
   `bestbefore_controller.go` only maintains status
 - Helm chart, the only packaging: `charts/k-belt/`
 - End-to-end scripts: `hack/e2e/`

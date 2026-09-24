@@ -21,7 +21,7 @@ kubectl get nodeclaims -l karpenter.sh/nodepool=default
 ```
 
 If `Ready` is `False` with `InvalidSelector`, the selector parses on the API server but not in
-k-belt — usually an operator like `In` with no values. Fix the selector.
+k-belt, usually an operator such as `In` with no values. Fix the selector.
 
 If the counts look right, look at the NodeClaims themselves. k-belt skips any NodeClaim without both
 `karpenter.sh/nodepool-hash` and `karpenter.sh/nodepool-hash-version`, because Karpenter's drift
@@ -34,8 +34,8 @@ kubectl get nodeclaim <name> -o jsonpath='{.metadata.annotations}'
 NodeClaims carrying `bestbefore.k-belt.io/paused` are skipped, which is the point of that
 annotation.
 
-If the policy sets `maxConcurrent`, a `STALE` count above `DRIFTED` is the cap doing its job: the
-rest are queued and re-checked every 30 seconds.
+If the policy sets `maxConcurrent`, `STALE` will exceed `DRIFTED` until the rotation completes.
+k-belt re-checks the remaining NodeClaims every 30 seconds and marks the oldest as slots free up.
 
 ## Nodes are marked but never replaced
 
